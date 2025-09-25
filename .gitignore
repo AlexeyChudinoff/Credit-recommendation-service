@@ -1,0 +1,143 @@
+# ===============================================
+# Maven/Gradle build outputs
+# ===============================================
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+out/
+bin/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# ===============================================
+# IDE files
+# ===============================================
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse based IDE
+.classpath
+.project
+.settings/
+bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+*.swp
+*.swo
+
+# ===============================================
+# Operating System files
+# ===============================================
+### Mac OS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+### Linux ###
+*~
+
+# ===============================================
+# Log files
+# ===============================================
+*.log
+logs/
+!**/src/main/**/logs/
+!**/src/test/**/logs/
+
+# ===============================================
+# Database files
+# ===============================================
+*.db
+*.mv.db
+*.trace.db
+*.h2.db
+.h2/
+
+# ===============================================
+# Application specific files
+# ===============================================
+# Configuration files with sensitive data
+application-dev.properties
+application-prod.properties
+*.keystore
+*.jks
+
+# ===============================================
+# Maven wrapper
+# ===============================================
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# ===============================================
+# Gradle (если будете использовать)
+# ===============================================
+.gradle/
+**/build/
+
+# ===============================================
+# Dependency reduced POM
+# ===============================================
+dependency-reduced-pom.xml
+
+# ===============================================
+# CI/CD files
+# ===============================================
+ci/
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+
+# ===============================================
+# Temp files
+# ===============================================
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ===============================================
+# Coverage reports
+# ===============================================
+jacoco.exec
+*.exec
+coverage/
+jacoco-report/
