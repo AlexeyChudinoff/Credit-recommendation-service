@@ -19,15 +19,21 @@ class SwaggerConfigTest {
 
   @Test
   void swaggerUI_ShouldBeAccessible() throws Exception {
-    mockMvc.perform(get("/swagger-ui.html"))
+    mockMvc.perform(get("/swagger-ui/index.html"))
         .andExpect(status().isOk());
   }
 
   @Test
   void apiDocs_ShouldReturnOpenAPISpec() throws Exception {
-    mockMvc.perform(get("/api-docs"))
+    mockMvc.perform(get("/v3/api-docs"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.openapi").exists())
-        .andExpect(jsonPath("$.info.title").value("Bank Star Recommendation Service API"));
+        .andExpect(jsonPath("$.info.title").value("🏦 Bank Star Recommendation Service API"));
+  }
+
+  @Test
+  void customApiDocsEndpoint_ShouldBeAccessible() throws Exception {
+    mockMvc.perform(get("/api-docs"))
+        .andExpect(status().isOk());
   }
 }

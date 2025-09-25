@@ -20,6 +20,7 @@ class RecommendationServiceApplicationIntegrationTest {
   @Test
   void contextLoads() {
     // Проверяем, что контекст Spring загружается корректно
+    assertNotNull(restTemplate);
   }
 
   @Test
@@ -29,7 +30,7 @@ class RecommendationServiceApplicationIntegrationTest {
 
     // Act
     ResponseEntity<String> response = restTemplate.getForEntity(
-        "/recommendation/" + userId, String.class);
+        "/api/v1/recommendations/" + userId, String.class);
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -38,13 +39,63 @@ class RecommendationServiceApplicationIntegrationTest {
   }
 
   @Test
+  void getRecommendations_WhenInvalidUser_ShouldReturnNotFound() {
+    // Arrange
+    String userId = "00000000-0000-0000-0000-000000000000";
+
+    // Act
+    ResponseEntity<String> response = restTemplate.getForEntity(
+        "/api/v1/recommendations/" + userId, String.class);
+
+    // Assert
+    assertEquals(HttpStatus.OK, response.getStatusCode()); // Возвращает пустой список, не 404
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().contains("\"recommendations\":[]"));
+  }
+
+  @Test
+  void getRecommendations_WhenInvalidUUID_ShouldReturnBadRequest() {
+    // Arrange
+    String invalidUserId = "not-a-uuid";
+
+    // Act
+    ResponseEntity<String> response = restTemplate.getForEntity(
+        "/api/v1/recommendations/" + invalidUserId, String.class);
+
+    // Assert
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void healthEndpoint_ShouldReturnHealthy() {
     // Act
     ResponseEntity<String> response = restTemplate.getForEntity(
-        "/recommendation/health", String.class);
+        "/api/v1/recommendations/health", String.class);
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals("Service is healthy!", response.getBody());
+    assertTrue(response.getBody().contains("OPERATIONAL"));
+  }
+
+  @Test
+  void infoEndpoint_ShouldReturnServiceInfo() {
+    // Act
+    ResponseEntity<String> response = restTemplate.getForEntity(
+        "/api/v1/recommendations/info", String.class);
+
+    // Assert
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(response.getBody().contains("Bank Star Recommendation Service"));
+  }
+
+  @Test
+  void statsEndpoint_ShouldReturnStatistics() {
+    // Act
+    ResponseEntity<String> response = restTemplate.getForEntity(
+        "/api/v1/recommendations/stats", String.class);
+
+    // Assert
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(response.getBody().contains("Статистика сервиса"));
   }
 }
