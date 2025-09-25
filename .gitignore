@@ -1,143 +1,69 @@
-# ===============================================
-# Maven/Gradle build outputs
-# ===============================================
+# =====================
+# Build outputs
+# =====================
 target/
-build/
+!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-out/
-bin/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 *.jar
 *.war
-*.ear
-*.zip
-*.tar.gz
 
-# ===============================================
+# =====================
 # IDE files
-# ===============================================
+# =====================
 ### IntelliJ IDEA ###
-.idea/
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
 *.iws
 *.iml
 *.ipr
-out/
-.idea_modules/
 
-# Eclipse based IDE
+### Eclipse ###
+.apt_generated
 .classpath
+.factorypath
 .project
-.settings/
-bin/
+.settings
+.springBeans
+.sts4-cache
 
-# NetBeans
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-# VS Code
+### VS Code ###
 .vscode/
-*.swp
-*.swo
 
-# ===============================================
-# Operating System files
-# ===============================================
+# =====================
+# Operating System
+# =====================
 ### Mac OS ###
 .DS_Store
-.AppleDouble
-.LSOverride
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
 
 ### Windows ###
-# Windows thumbnail cache files
 Thumbs.db
-ehthumbs.db
-ehthumbs_vista.db
-
-# Dump file
-*.stackdump
-
-# Folder config file
 [Dd]esktop.ini
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-### Linux ###
-*~
-
-# ===============================================
-# Log files
-# ===============================================
+# =====================
+# Logs & Temp files
+# =====================
 *.log
 logs/
-!**/src/main/**/logs/
-!**/src/test/**/logs/
+*.tmp
+.tmp/
 
-# ===============================================
-# Database files
-# ===============================================
-*.db
-*.mv.db
+# =====================
+# Database (важно для вашего проекта!)
+# =====================
+# Исключаем временные файлы H2, но не саму базу
 *.trace.db
 *.h2.db
 .h2/
+# Но разрешаем нашу учебную базу
+!src/main/resources/data/transaction.mv.db
 
-# ===============================================
-# Application specific files
-# ===============================================
-# Configuration files with sensitive data
-application-dev.properties
-application-prod.properties
-*.keystore
-*.jks
-
-# ===============================================
+# =====================
 # Maven wrapper
-# ===============================================
-!.mvn/wrapper/maven-wrapper.jar
+# =====================
 .mvn/wrapper/maven-wrapper.properties
-
-# ===============================================
-# Gradle (если будете использовать)
-# ===============================================
-.gradle/
-**/build/
-
-# ===============================================
-# Dependency reduced POM
-# ===============================================
-dependency-reduced-pom.xml
-
-# ===============================================
-# CI/CD files
-# ===============================================
-ci/
-.circleci/
-.travis.yml
-.gitlab-ci.yml
-
-# ===============================================
-# Temp files
-# ===============================================
-*.tmp
-*.temp
-tmp/
-temp/
-
-# ===============================================
-# Coverage reports
-# ===============================================
-jacoco.exec
-*.exec
-coverage/
-jacoco-report/

@@ -37,6 +37,7 @@ public class ProductRecommendation {
       requiredMode = Schema.RequiredMode.REQUIRED
   )
   private String text;
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProductRecommendation.class);
 
   // Конструкторы
   public ProductRecommendation() {
@@ -117,5 +118,4 @@ public class ProductRecommendation {
     return text.substring(0, 100) + "...";
   }
 
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProductRecommendation.class);
 }

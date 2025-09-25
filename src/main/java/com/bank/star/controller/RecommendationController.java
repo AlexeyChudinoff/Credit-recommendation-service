@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.bank.star.dto.RecommendationResponse;
+import com.bank.star.dto.ErrorResponse;
 import com.bank.star.service.RecommendationService;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -70,15 +72,18 @@ public class RecommendationController {
       ),
       @ApiResponse(
           responseCode = "400",
-          description = "❌ Неверный формат UUID пользователя"
+          description = "❌ Неверный формат UUID пользователя",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
       ),
       @ApiResponse(
           responseCode = "404",
-          description = "❌ Пользователь не найден в системе"
+          description = "❌ Пользователь не найден в системе",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
       ),
       @ApiResponse(
           responseCode = "500",
-          description = "🚨 Внутренняя ошибка сервера"
+          description = "🚨 Внутренняя ошибка сервера",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
       )
   })
   @GetMapping("/{userId}")
@@ -92,21 +97,13 @@ public class RecommendationController {
 
     logger.info("🔄 Получен запрос на рекомендации для пользователя: {}", userId);
 
-    try {
-      UUID userUuid = UUID.fromString(userId);
-      RecommendationResponse response = recommendationService.getRecommendations(userUuid);
+    // Валидация будет обработана глобальным обработчиком исключений
+    UUID userUuid = UUID.fromString(userId);
+    RecommendationResponse response = recommendationService.getRecommendations(userUuid);
 
-      logger.info("✅ Успешно обработан запрос для пользователя: {}. Найдено рекомендаций: {}",
-          userId, response.getRecommendations().size());
-      return ResponseEntity.ok(response);
-
-    } catch (IllegalArgumentException e) {
-      logger.error("❌ Неверный формат UUID: {}", userId);
-      return ResponseEntity.badRequest().build();
-    } catch (Exception e) {
-      logger.error("🚨 Ошибка при обработке запроса для пользователя {}: {}", userId, e.getMessage());
-      return ResponseEntity.internalServerError().build();
-    }
+    logger.info("✅ Успешно обработан запрос для пользователя: {}. Найдено рекомендаций: {}",
+        userId, response.getRecommendations().size());
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -121,11 +118,11 @@ public class RecommendationController {
   public ResponseEntity<String> health() {
     logger.debug("🔍 Проверка здоровья сервиса");
     return ResponseEntity.ok("""
-            🏦 Bank Star Recommendation Service
-            Status: ✅ OPERATIONAL
-            Version: 1.0.0
-            Timestamp: %s
-            """.formatted(java.time.LocalDateTime.now()));
+                🏦 Bank Star Recommendation Service
+                Status: ✅ OPERATIONAL
+                Version: 1.0.0
+                Timestamp: %s
+                """.formatted(LocalDateTime.now()));
   }
 
   @Operation(
@@ -139,22 +136,22 @@ public class RecommendationController {
   @GetMapping("/info")
   public ResponseEntity<String> info() {
     return ResponseEntity.ok("""
-            🏦 Bank Star Recommendation Service v1.0.0
-            
-            📊 Основные возможности:
-            • Персонализированные рекомендации банковских продуктов
-            • Анализ транзакционного поведения в реальном времени
-            • Интеграция с мобильным приложением и личным кабинетом
-            • Поддержка 3 алгоритмов рекомендаций
-            
-            🔧 Технологический стек:
-            • Java 17, Spring Boot 3.2
-            • H2 Database (read-only)
-            • Spring JDBC Template
-            • Swagger/OpenAPI 3.0
-            
-            👥 Для тестирования используйте тестовые UUID пользователей
-            """);
+                🏦 Bank Star Recommendation Service v1.0.0
+                
+                📊 Основные возможности:
+                • Персонализированные рекомендации банковских продуктов
+                • Анализ транзакционного поведения в реальном времени
+                • Интеграция с мобильным приложением и личным кабинетом
+                • Поддержка 3 алгоритмов рекомендаций
+                
+                🔧 Технологический стек:
+                • Java 17, Spring Boot 3.2
+                • H2 Database (read-only)
+                • Spring JDBC Template
+                • Swagger/OpenAPI 3.0
+                
+                👥 Для тестирования используйте тестовые UUID пользователей
+                """);
   }
 
   @Operation(
@@ -168,17 +165,49 @@ public class RecommendationController {
   @GetMapping("/stats")
   public ResponseEntity<String> stats() {
     return ResponseEntity.ok("""
-            📈 Статистика сервиса рекомендаций:
-            
-            • Алгоритмы рекомендаций: 3
-            • Поддерживаемые продукты: Invest 500, Top Saving, Простой кредит
-            • Максимальное время ответа: < 100ms
-            • Формат данных: JSON
-            • Кэширование: Включено
-            
-            🎯 Бизнес-логика:
-            Основана на анализе финансового поведения пользователей
-            и строгом соответствии бизнес-правилам банка.
-            """);
+                📈 Статистика сервиса рекомендаций:
+                
+                • Алгоритмы рекомендаций: 3
+                • Поддерживаемые продукты: Invest 500, Top Saving, Простой кредит
+                • Максимальное время ответа: < 100ms
+                • Формат данных: JSON
+                • Кэширование: Включено
+                
+                🎯 Бизнес-логика:
+                Основана на анализе финансового поведения пользователей
+                и строгом соответствии бизнес-правилам банка.
+                """);
+  }
+
+  /**
+   * Обработчик исключений для неверного формата UUID
+   */
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+    logger.warn("❌ Ошибка валидации UUID: {}", e.getMessage());
+
+    ErrorResponse error = new ErrorResponse(
+        "VALIDATION_ERROR",
+        "Неверный формат UUID пользователя: " + e.getMessage(),
+        LocalDateTime.now()
+    );
+
+    return ResponseEntity.badRequest().body(error);
+  }
+
+  /**
+   * Глобальный обработчик всех исключений
+   */
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ErrorResponse> handleAllExceptions(Exception e) {
+    logger.error("🚨 Внутренняя ошибка сервера при обработке запроса: {}", e.getMessage(), e);
+
+    ErrorResponse error = new ErrorResponse(
+        "INTERNAL_SERVER_ERROR",
+        "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте позже.",
+        LocalDateTime.now()
+    );
+
+    return ResponseEntity.internalServerError().body(error);
   }
 }

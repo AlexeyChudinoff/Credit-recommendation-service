@@ -45,6 +45,9 @@ public class RecommendationService {
 
   public RecommendationResponse getRecommendations(UUID userId) {
     logger.info("Getting recommendations for user: {}", userId);
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
 
     List<ProductRecommendation> recommendations = new ArrayList<>();
 

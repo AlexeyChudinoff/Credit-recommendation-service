@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import com.bank.star.model.ProductType;  // ← Этот импорт должен быть!
 
 import java.math.BigDecimal;
 import java.util.UUID;
