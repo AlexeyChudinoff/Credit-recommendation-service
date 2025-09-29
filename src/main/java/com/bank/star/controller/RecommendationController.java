@@ -11,12 +11,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.dto.ErrorResponse;
 import com.bank.star.service.RecommendationService;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -27,10 +30,12 @@ public class RecommendationController {
   private static final Logger logger = LoggerFactory.getLogger(RecommendationController.class);
 
   private final RecommendationService recommendationService;
+  private final JdbcTemplate jdbcTemplate;
 
   @Autowired
-  public RecommendationController(RecommendationService recommendationService) {
+  public RecommendationController(RecommendationService recommendationService, JdbcTemplate jdbcTemplate) {
     this.recommendationService = recommendationService;
+    this.jdbcTemplate = jdbcTemplate;
   }
 
   @Operation(
@@ -104,6 +109,74 @@ public class RecommendationController {
     logger.info("✅ Успешно обработан запрос для пользователя: {}. Найдено рекомендаций: {}",
         userId, response.getRecommendations().size());
     return ResponseEntity.ok(response);
+  }
+
+  @Operation(
+      summary = "Диагностика базы данных",
+      description = "Проверка структуры и содержимого базы данных"
+  )
+  @GetMapping("/debug/database")
+  public ResponseEntity<String> checkDatabase() {
+    try {
+      StringBuilder result = new StringBuilder();
+
+      // 1. Получим все таблицы
+      List<String> tables = jdbcTemplate.queryForList(
+          "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC'",
+          String.class
+      );
+
+      result.append("📊 Таблицы в базе: ").append(tables).append("\n\n");
+
+      // 2. Проверим структуру каждой таблицы
+      for (String table : tables) {
+        result.append("--- Таблица: ").append(table).append(" ---\n");
+
+        try {
+          // Получим структуру таблицы
+          List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+              "SELECT COLUMN_NAME, TYPE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?",
+              table
+          );
+
+          for (Map<String, Object> column : columns) {
+            result.append("  ").append(column.get("COLUMN_NAME"))
+                .append(" : ").append(column.get("TYPE_NAME"))
+                .append("\n");
+          }
+
+          // Посчитаем количество записей
+          Integer count = jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM " + table, Integer.class);
+          result.append("  Записей: ").append(count).append("\n\n");
+
+        } catch (Exception e) {
+          result.append("  Ошибка: ").append(e.getMessage()).append("\n\n");
+        }
+      }
+
+      // 3. Проверим конкретно тестового пользователя
+      result.append("--- Проверка пользователя cd515076-5d8a-44be-930e-8d4fcb79f42d ---\n");
+      try {
+        // Проверим, есть ли транзакции для этого пользователя
+        List<Map<String, Object>> userTransactions = jdbcTemplate.queryForList(
+            "SELECT * FROM transactions WHERE user_id = ? LIMIT 5",
+            "cd515076-5d8a-44be-930e-8d4fcb79f42d"
+        );
+        result.append("Транзакций пользователя: ").append(userTransactions.size()).append("\n");
+
+        if (!userTransactions.isEmpty()) {
+          result.append("Первые транзакции: ").append(userTransactions).append("\n");
+        }
+      } catch (Exception e) {
+        result.append("Ошибка проверки пользователя: ").append(e.getMessage()).append("\n");
+      }
+
+      return ResponseEntity.ok(result.toString());
+
+    } catch (Exception e) {
+      return ResponseEntity.ok("❌ Ошибка подключения к БД: " + e.getMessage());
+    }
   }
 
   @Operation(

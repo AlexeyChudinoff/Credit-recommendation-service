@@ -23,37 +23,40 @@ public class RecommendationServiceApplication {
 
   @EventListener(ApplicationReadyEvent.class)
   public void checkDatabasePath() {
-    logger.info("🔍 Проверка подключения к базе данных...");
+    logger.info("🔍 Детальная проверка пути к базе данных...");
     logger.info("Database URL: {}", databaseUrl);
 
     try {
-      // Извлекаем путь к файлу из URL
-      String filePath = databaseUrl.replace("jdbc:h2:file:", "").split(";")[0];
+      // Извлекаем путь к файлу из URL и добавляем расширение .mv.db
+      String filePath = databaseUrl.replace("jdbc:h2:file:", "").split(";")[0] + ".mv.db";
       File dbFile = new File(filePath);
 
-      logger.info("Путь к файлу базы: {}", dbFile.getAbsolutePath());
-      logger.info("Файл базы существует: {}", dbFile.exists());
+      logger.info("Полный путь к файлу: {}", dbFile.getAbsolutePath());
+      logger.info("Файл существует: {}", dbFile.exists());
+      logger.info("Это файл: {}", dbFile.isFile());
+      logger.info("Это директория: {}", dbFile.isDirectory());
+      logger.info("Размер файла: {} байт", dbFile.length());
+      logger.info("Можно читать: {}", dbFile.canRead());
 
-      if (dbFile.exists()) {
-        logger.info("✅ База данных успешно найдена! Размер: {} байт", dbFile.length());
-      } else {
-        logger.error("❌ Файл базы данных не найден! Проверьте путь: {}", filePath);
-        logger.info("💡 Текущая рабочая директория: {}", System.getProperty("user.dir"));
+      // Проверим родительскую директорию
+      File parentDir = dbFile.getParentFile();
+      logger.info("Родительская директория: {}", parentDir.getAbsolutePath());
+      logger.info("Директория существует: {}", parentDir.exists());
 
-        // Покажем, где ищем файл
-        File currentDir = new File(".");
-        logger.info("💡 Содержимое текущей директории:");
-        File[] files = currentDir.listFiles();
+      if (parentDir.exists()) {
+        logger.info("Содержимое папки data:");
+        File[] files = parentDir.listFiles();
         if (files != null) {
           for (File file : files) {
-            logger.info("   - {} ({})", file.getName(),
-                file.isDirectory() ? "dir" : "file");
+            logger.info("   - {} ({} байт, файл: {})",
+                file.getName(), file.length(), file.isFile());
           }
         }
       }
 
     } catch (Exception e) {
-      logger.error("❌ Ошибка при проверке пути к базе данных: {}", e.getMessage());
+      logger.error("❌ Ошибка при проверке пути к базе данных: {}", e.getMessage(), e);
     }
   }
-}
+
+}//
