@@ -77,9 +77,9 @@ public class RecommendationRepository {
             SELECT COALESCE(SUM(t.amount), 0) 
             FROM transactions t 
             JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? 
-            AND p.type = ? AND t.type IN ('WITHDRAW', 'WITHDRAWAL')
+            WHERE t.user_id = ? AND p.type = ? AND t.transaction_type = 'WITHDRAWAL'
             """;
+
 
     try {
       BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type.name());
