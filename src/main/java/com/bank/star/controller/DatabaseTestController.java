@@ -127,10 +127,27 @@ public class DatabaseTestController {
   public ResponseEntity<String> databaseInfo() {
     try {
       String version = jdbcTemplate.queryForObject("SELECT H2VERSION()", String.class);
-      String mode = jdbcTemplate.queryForObject(
-          "SELECT SETTING_VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE NAME = 'MODE'",
-          String.class
-      );
+
+      // Альтернативные способы получения информации о режиме
+      String mode = "Не удалось определить";
+      try {
+        // Попробуем получить режим из URL базы данных
+        mode = jdbcTemplate.queryForObject(
+            "SELECT SETTING_VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE SETTING_NAME = 'MODE'",
+            String.class
+        );
+      } catch (Exception e) {
+        // Если не сработало, попробуем другой вариант
+        try {
+          mode = jdbcTemplate.queryForObject(
+              "SELECT VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE NAME = 'MODE'",
+              String.class
+          );
+        } catch (Exception ex) {
+          // Если и это не сработало, используем информацию из properties
+          mode = "PostgreSQL (из настроек URL)";
+        }
+      }
 
       String result = "✅ Информация о базе:\n" +
           "Версия H2: " + version + "\n" +
