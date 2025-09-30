@@ -85,5 +85,6 @@ public class RecommendationResponse {
         '}';
   }
 
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RecommendationResponse.class);
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(
+      RecommendationResponse.class);
 }
