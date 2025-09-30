@@ -37,7 +37,8 @@ public class ProductRecommendation {
       requiredMode = Schema.RequiredMode.REQUIRED
   )
   private String text;
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProductRecommendation.class);
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(
+      ProductRecommendation.class);
 
   // Конструкторы
   public ProductRecommendation() {
@@ -82,8 +83,12 @@ public class ProductRecommendation {
   // equals и hashCode для корректного сравнения
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     ProductRecommendation that = (ProductRecommendation) o;
     return Objects.equals(id, that.id);
   }

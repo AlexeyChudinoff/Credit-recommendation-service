@@ -1,19 +1,21 @@
 package com.bank.star.controller;
 
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.*;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Контроллер для тестирования базы данных и отладки рекомендаций
@@ -49,7 +51,8 @@ public class DatabaseTestController {
       String result = "✅ Подключение успешно!\n" +
           "URL: " + metaData.getURL() + "\n" +
           "User: " + metaData.getUserName() + "\n" +
-          "Database: " + metaData.getDatabaseProductName() + " " + metaData.getDatabaseProductVersion() + "\n" +
+          "Database: " + metaData.getDatabaseProductName() + " "
+          + metaData.getDatabaseProductVersion() + "\n" +
           "Read Only: " + connection.isReadOnly();
 
       logger.info(result);
@@ -105,7 +108,8 @@ public class DatabaseTestController {
   )
   public ResponseEntity<String> simpleTest() {
     try {
-      String result = jdbcTemplate.queryForObject("SELECT 'База данных работает!' AS message", String.class);
+      String result = jdbcTemplate.queryForObject("SELECT 'База данных работает!' AS message",
+          String.class);
       return ResponseEntity.ok("✅ " + result);
     } catch (Exception e) {
       return ResponseEntity.ok("❌ Простейший запрос не работает: " + e.getMessage());
@@ -159,12 +163,14 @@ public class DatabaseTestController {
       StringBuilder result = new StringBuilder();
       result.append("=== TRANSACTIONS TABLE ===\n");
       for (Map<String, Object> column : transactionsColumns) {
-        result.append(column.get("COLUMN_NAME")).append(" - ").append(column.get("DATA_TYPE")).append("\n");
+        result.append(column.get("COLUMN_NAME")).append(" - ").append(column.get("DATA_TYPE"))
+            .append("\n");
       }
 
       result.append("\n=== PRODUCTS TABLE ===\n");
       for (Map<String, Object> column : productsColumns) {
-        result.append(column.get("COLUMN_NAME")).append(" - ").append(column.get("DATA_TYPE")).append("\n");
+        result.append(column.get("COLUMN_NAME")).append(" - ").append(column.get("DATA_TYPE"))
+            .append("\n");
       }
 
       return ResponseEntity.ok(result.toString());
@@ -260,20 +266,27 @@ public class DatabaseTestController {
   )
   public ResponseEntity<String> getUserStats(@PathVariable UUID userId) {
     try {
-      BigDecimal debitDeposit = recommendationRepository.getTotalDepositAmountByProductType(userId, com.bank.star.model.ProductType.DEBIT);
-      BigDecimal debitSpend = recommendationRepository.getTotalSpendAmountByProductType(userId, com.bank.star.model.ProductType.DEBIT);
-      BigDecimal savingDeposit = recommendationRepository.getTotalDepositAmountByProductType(userId, com.bank.star.model.ProductType.SAVING);
+      BigDecimal debitDeposit = recommendationRepository.getTotalDepositAmountByProductType(userId,
+          com.bank.star.model.ProductType.DEBIT);
+      BigDecimal debitSpend = recommendationRepository.getTotalSpendAmountByProductType(userId,
+          com.bank.star.model.ProductType.DEBIT);
+      BigDecimal savingDeposit = recommendationRepository.getTotalDepositAmountByProductType(userId,
+          com.bank.star.model.ProductType.SAVING);
 
-      boolean hasCredit = recommendationRepository.userHasProductType(userId, com.bank.star.model.ProductType.CREDIT);
-      boolean hasInvest = recommendationRepository.userHasProductType(userId, com.bank.star.model.ProductType.INVEST);
-      boolean hasDebit = recommendationRepository.userHasProductType(userId, com.bank.star.model.ProductType.DEBIT);
+      boolean hasCredit = recommendationRepository.userHasProductType(userId,
+          com.bank.star.model.ProductType.CREDIT);
+      boolean hasInvest = recommendationRepository.userHasProductType(userId,
+          com.bank.star.model.ProductType.INVEST);
+      boolean hasDebit = recommendationRepository.userHasProductType(userId,
+          com.bank.star.model.ProductType.DEBIT);
 
       boolean invest500Condition1 = hasDebit;
       boolean invest500Condition2 = !hasInvest;
       boolean invest500Condition3 = savingDeposit.compareTo(new BigDecimal("1000")) > 0;
 
       boolean topSavingCondition1 = hasDebit;
-      boolean topSavingCondition2 = debitDeposit.compareTo(new BigDecimal("50000")) >= 0 || savingDeposit.compareTo(new BigDecimal("50000")) >= 0;
+      boolean topSavingCondition2 = debitDeposit.compareTo(new BigDecimal("50000")) >= 0
+          || savingDeposit.compareTo(new BigDecimal("50000")) >= 0;
       boolean topSavingCondition3 = debitDeposit.compareTo(debitSpend) > 0;
 
       boolean simpleCreditCondition1 = !hasCredit;
@@ -299,20 +312,32 @@ public class DatabaseTestController {
       result.append("Invest 500:\n");
       result.append("  DEBIT продукт: ").append(invest500Condition1 ? "✅" : "❌").append("\n");
       result.append("  Нет INVEST: ").append(invest500Condition2 ? "✅" : "❌").append("\n");
-      result.append("  SAVING > 1,000: ").append(invest500Condition3 ? "✅" : "❌ (").append(savingDeposit).append(")").append("\n");
-      result.append("  ИТОГО: ").append(invest500Condition1 && invest500Condition2 && invest500Condition3 ? "✅ РЕКОМЕНДОВАНО" : "❌ НЕ РЕКОМЕНДОВАНО").append("\n\n");
+      result.append("  SAVING > 1,000: ").append(invest500Condition3 ? "✅" : "❌ (")
+          .append(savingDeposit).append(")").append("\n");
+      result.append("  ИТОГО: ").append(
+          invest500Condition1 && invest500Condition2 && invest500Condition3 ? "✅ РЕКОМЕНДОВАНО"
+              : "❌ НЕ РЕКОМЕНДОВАНО").append("\n\n");
 
       result.append("Top Saving:\n");
       result.append("  DEBIT продукт: ").append(topSavingCondition1 ? "✅" : "❌").append("\n");
-      result.append("  Пополнения ≥ 50k: ").append(topSavingCondition2 ? "✅" : "❌ (").append("DEBIT:").append(debitDeposit).append(" SAVING:").append(savingDeposit).append(")").append("\n");
-      result.append("  Пополнения > Трат: ").append(topSavingCondition3 ? "✅" : "❌ (").append("разница:").append(debitDeposit.subtract(debitSpend)).append(")").append("\n");
-      result.append("  ИТОГО: ").append(topSavingCondition1 && topSavingCondition2 && topSavingCondition3 ? "✅ РЕКОМЕНДОВАНО" : "❌ НЕ РЕКОМЕНДОВАНО").append("\n\n");
+      result.append("  Пополнения ≥ 50k: ").append(topSavingCondition2 ? "✅" : "❌ (")
+          .append("DEBIT:").append(debitDeposit).append(" SAVING:").append(savingDeposit)
+          .append(")").append("\n");
+      result.append("  Пополнения > Трат: ").append(topSavingCondition3 ? "✅" : "❌ (")
+          .append("разница:").append(debitDeposit.subtract(debitSpend)).append(")").append("\n");
+      result.append("  ИТОГО: ").append(
+          topSavingCondition1 && topSavingCondition2 && topSavingCondition3 ? "✅ РЕКОМЕНДОВАНО"
+              : "❌ НЕ РЕКОМЕНДОВАНО").append("\n\n");
 
       result.append("Простой кредит:\n");
       result.append("  Нет CREDIT: ").append(simpleCreditCondition1 ? "✅" : "❌").append("\n");
-      result.append("  Пополнения > Трат: ").append(simpleCreditCondition2 ? "✅" : "❌ (").append("разница:").append(debitDeposit.subtract(debitSpend)).append(")").append("\n");
-      result.append("  Траты > 100,000: ").append(simpleCreditCondition3 ? "✅" : "❌ (").append(debitSpend).append(")").append("\n");
-      result.append("  ИТОГО: ").append(simpleCreditCondition1 && simpleCreditCondition2 && simpleCreditCondition3 ? "✅ РЕКОМЕНДОВАНО" : "❌ НЕ РЕКОМЕНДОВАНО").append("\n");
+      result.append("  Пополнения > Трат: ").append(simpleCreditCondition2 ? "✅" : "❌ (")
+          .append("разница:").append(debitDeposit.subtract(debitSpend)).append(")").append("\n");
+      result.append("  Траты > 100,000: ").append(simpleCreditCondition3 ? "✅" : "❌ (")
+          .append(debitSpend).append(")").append("\n");
+      result.append("  ИТОГО: ").append(
+          simpleCreditCondition1 && simpleCreditCondition2 && simpleCreditCondition3
+              ? "✅ РЕКОМЕНДОВАНО" : "❌ НЕ РЕКОМЕНДОВАНО").append("\n");
 
       return ResponseEntity.ok(result.toString());
 

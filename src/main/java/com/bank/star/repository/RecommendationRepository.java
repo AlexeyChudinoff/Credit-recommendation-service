@@ -1,14 +1,13 @@
 package com.bank.star.repository;
 
+import com.bank.star.model.ProductType;
+import java.math.BigDecimal;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import com.bank.star.model.ProductType;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Repository
 public class RecommendationRepository {
@@ -29,14 +28,15 @@ public class RecommendationRepository {
     logger.debug("Checking if user {} has product type {}", userId, type);
 
     String sql = """
-            SELECT COUNT(*) > 0 
-            FROM transactions t 
-            JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? AND p.type = ?
-            """;
+        SELECT COUNT(*) > 0 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ?
+        """;
 
     try {
-      Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, userId.toString(), type.name());
+      Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, userId.toString(),
+          type.name());
       return result != null && result;
     } catch (Exception e) {
       logger.error("Error checking product type for user {}: {}", userId, e.getMessage());
@@ -51,14 +51,15 @@ public class RecommendationRepository {
     logger.debug("Getting total deposits for user {} and product type {}", userId, type);
 
     String sql = """
-            SELECT COALESCE(SUM(t.amount), 0) 
-            FROM transactions t 
-            JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? AND p.type = ? AND t.type = 'DEPOSIT'
-            """;
+        SELECT COALESCE(SUM(t.amount), 0) 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ? AND t.type = 'DEPOSIT'
+        """;
 
     try {
-      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type.name());
+      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
+          type.name());
       return result != null ? result : BigDecimal.ZERO;
     } catch (Exception e) {
       logger.error("Error getting deposit amount for user {}: {}", userId, e.getMessage());
@@ -67,22 +68,22 @@ public class RecommendationRepository {
   }
 
   /**
-   * Возвращает сумму трат по указанному типу продукта
-   * ИСПРАВЛЕНИЕ: используем 'WITHDRAW' вместо 'WITHDRAWAL'
+   * Возвращает сумму трат по указанному типу продукта ИСПРАВЛЕНИЕ: используем 'WITHDRAW' вместо
+   * 'WITHDRAWAL'
    */
   public BigDecimal getTotalSpendAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total spends for user {} and product type {}", userId, type);
 
     String sql = """
-            SELECT COALESCE(SUM(t.amount), 0) 
-            FROM transactions t 
-            JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? AND p.type = ? AND t.transaction_type = 'WITHDRAWAL'
-            """;
-
+        SELECT COALESCE(SUM(t.amount), 0) 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ? AND t.transaction_type = 'WITHDRAWAL'
+        """;
 
     try {
-      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type.name());
+      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
+          type.name());
       return result != null ? result : BigDecimal.ZERO;
     } catch (Exception e) {
       logger.error("Error getting spend amount for user {}: {}", userId, e.getMessage());
@@ -97,14 +98,15 @@ public class RecommendationRepository {
     logger.debug("Getting transaction count for user {} and product type {}", userId, type);
 
     String sql = """
-            SELECT COUNT(*) 
-            FROM transactions t 
-            JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? AND p.type = ?
-            """;
+        SELECT COUNT(*) 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ?
+        """;
 
     try {
-      Integer result = jdbcTemplate.queryForObject(sql, Integer.class, userId.toString(), type.name());
+      Integer result = jdbcTemplate.queryForObject(sql, Integer.class, userId.toString(),
+          type.name());
       return result != null ? result : 0;
     } catch (Exception e) {
       logger.error("Error getting transaction count for user {}: {}", userId, e.getMessage());
@@ -116,20 +118,23 @@ public class RecommendationRepository {
    * Получает средний размер транзакции по типу продукта
    */
   public BigDecimal getAverageTransactionAmountByProductType(UUID userId, ProductType type) {
-    logger.debug("Getting average transaction amount for user {} and product type {}", userId, type);
+    logger.debug("Getting average transaction amount for user {} and product type {}", userId,
+        type);
 
     String sql = """
-            SELECT COALESCE(AVG(t.amount), 0) 
-            FROM transactions t 
-            JOIN products p ON t.product_id = p.id 
-            WHERE t.user_id = ? AND p.type = ?
-            """;
+        SELECT COALESCE(AVG(t.amount), 0) 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ?
+        """;
 
     try {
-      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type.name());
+      BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
+          type.name());
       return result != null ? result : BigDecimal.ZERO;
     } catch (Exception e) {
-      logger.error("Error getting average transaction amount for user {}: {}", userId, e.getMessage());
+      logger.error("Error getting average transaction amount for user {}: {}", userId,
+          e.getMessage());
       return BigDecimal.ZERO;
     }
   }
