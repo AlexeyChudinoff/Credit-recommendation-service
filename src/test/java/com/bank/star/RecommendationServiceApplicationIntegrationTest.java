@@ -1,7 +1,14 @@
 package com.bank.star;
 
-import com.bank.star.dto.RecommendationResponse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.bank.star.dto.ErrorResponse;
+import com.bank.star.dto.RecommendationResponse;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,11 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -73,7 +75,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {});
+        new ParameterizedTypeReference<RecommendationResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -96,7 +99,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {});
+        new ParameterizedTypeReference<RecommendationResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -118,7 +122,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {});
+        new ParameterizedTypeReference<RecommendationResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -140,7 +145,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {});
+        new ParameterizedTypeReference<RecommendationResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -160,7 +166,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + invalidUserId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<ErrorResponse>() {});
+        new ParameterizedTypeReference<ErrorResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -179,7 +186,8 @@ class RecommendationServiceApplicationIntegrationTest {
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {});
+        new ParameterizedTypeReference<RecommendationResponse>() {
+        });
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
