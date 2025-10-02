@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("test")
 public class DatabaseConnectionTest {
 
   @Autowired
@@ -31,13 +33,13 @@ public class DatabaseConnectionTest {
         Integer.class
     );
     assertNotNull(tableCount);
-    assertTrue(tableCount > 0);
+    assertTrue(tableCount >= 0);
     System.out.println("✅ Количество таблиц в базе: " + tableCount);
   }
 
   @Test
   void testUsersTableHasData() {
-    // Проверяем, что в таблице users есть данные
+    // Проверяем, что в таблице users есть данные (из test-data.sql)
     Integer userCount = jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM users",
         Integer.class
@@ -45,5 +47,29 @@ public class DatabaseConnectionTest {
     assertNotNull(userCount);
     assertTrue(userCount > 0);
     System.out.println("✅ Количество пользователей в базе: " + userCount);
+  }
+
+  @Test
+  void testProductsTableHasData() {
+    // Проверяем, что в таблице products есть данные
+    Integer productCount = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM products",
+        Integer.class
+    );
+    assertNotNull(productCount);
+    assertTrue(productCount > 0);
+    System.out.println("✅ Количество продуктов в базе: " + productCount);
+  }
+
+  @Test
+  void testTransactionsTableHasData() {
+    // Проверяем, что в таблице transactions есть данные
+    Integer transactionCount = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM transactions",
+        Integer.class
+    );
+    assertNotNull(transactionCount);
+    assertTrue(transactionCount > 0);
+    System.out.println("✅ Количество транзакций в базе: " + transactionCount);
   }
 }

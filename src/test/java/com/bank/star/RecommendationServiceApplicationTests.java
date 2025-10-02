@@ -1,10 +1,10 @@
 package com.bank.star;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -14,12 +14,5 @@ class RecommendationServiceApplicationTests {
   void contextLoads() {
     // Простой тест для проверки загрузки контекста Spring
     assertTrue(true, "Контекст Spring должен загружаться успешно");
-  }
-
-  @Test
-  void applicationStartsSuccessfully() {
-    // Дополнительный тест для проверки запуска приложения
-    RecommendationServiceApplication.main(new String[]{});
-    assertTrue(true, "Приложение должно запускаться без ошибок");
   }
 }

@@ -64,7 +64,9 @@ class RecommendationRepositoryTest {
 
     // Assert
     assertNotNull(result);
-    assertEquals(0, new BigDecimal("50000.00").compareTo(result));
+    // Согласно test-data.sql: для пользователя cd515076-5d8a-44be-930e-8d4fcb79f42d
+    // DEBIT депозиты: 20000.00
+    assertEquals(0, new BigDecimal("20000.00").compareTo(result));
   }
 
   @Test
@@ -85,16 +87,20 @@ class RecommendationRepositoryTest {
 
     // Assert
     assertNotNull(result);
+    // Согласно test-data.sql: для пользователя d4a4d619-9a0c-4fc5-b0cb-76c49409546b
+    // DEBIT списания: 10000.00
     assertEquals(0, new BigDecimal("10000.00").compareTo(result));
   }
 
   @Test
-  void getTotalSpendAmountByProductType_WhenUserHasNoSpends_ShouldReturnZero() {
+  void getTotalSpendAmountByProductType_WhenUserHasSpends_ShouldReturnCorrectAmount2() {
     // Act
     BigDecimal result = repository.getTotalSpendAmountByProductType(existingUserId, ProductType.DEBIT);
 
     // Assert
     assertNotNull(result);
-    assertEquals(BigDecimal.ZERO, result);
+    // Согласно test-data.sql: для пользователя cd515076-5d8a-44be-930e-8d4fcb79f42d
+    // DEBIT списания: 15000.00
+    assertEquals(0, new BigDecimal("15000.00").compareTo(result));
   }
 }

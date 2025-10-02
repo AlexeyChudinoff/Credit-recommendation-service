@@ -46,6 +46,7 @@ public class RecommendationRepository {
 
   /**
    * Возвращает сумму пополнений по указанному типу продукта
+   * ИСПРАВЛЕНИЕ: используем t.type (CHARACTER VARYING)
    */
   public BigDecimal getTotalDepositAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total deposits for user {} and product type {}", userId, type);
@@ -68,8 +69,8 @@ public class RecommendationRepository {
   }
 
   /**
-   * Возвращает сумму трат по указанному типу продукта ИСПРАВЛЕНИЕ: используем 'WITHDRAW' вместо
-   * 'WITHDRAWAL'
+   * Возвращает сумму трат по указанному типу продукта
+   * ИСПРАВЛЕНИЕ: используем t.type (CHARACTER VARYING)
    */
   public BigDecimal getTotalSpendAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total spends for user {} and product type {}", userId, type);
@@ -78,7 +79,7 @@ public class RecommendationRepository {
         SELECT COALESCE(SUM(t.amount), 0) 
         FROM transactions t 
         JOIN products p ON t.product_id = p.id 
-        WHERE t.user_id = ? AND p.type = ? AND t.transaction_type = 'WITHDRAWAL'
+        WHERE t.user_id = ? AND p.type = ? AND t.type = 'WITHDRAWAL'
         """;
 
     try {

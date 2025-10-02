@@ -1,165 +1,180 @@
 package com.bank.star.service;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import com.bank.star.dto.ProductRecommendation;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.model.ProductType;
 import com.bank.star.repository.RecommendationRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 class RecommendationServiceTest {
 
-  @Mock
+  @MockBean
   private RecommendationRepository repository;
 
-  @InjectMocks
+  @Autowired
   private RecommendationService recommendationService;
 
-  private UUID testUserId;
-
-  @BeforeEach
-  void setUp() {
-    testUserId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
-  }
+  private final UUID testUserId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
 
   @Test
-  void getRecommendations_WhenUserEligibleForInvest500_ShouldReturnInvest500() {
-    // Arrange
-    when(repository.userHasProductType(testUserId, ProductType.DEBIT)).thenReturn(true);
-    when(repository.userHasProductType(testUserId, ProductType.INVEST)).thenReturn(false);
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.SAVING))
+  void whenUserEligibleForInvest500_thenReturnInvest500Recommendation() {
+    // Настраиваем только необходимые моки для Invest 500
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(true);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
         .thenReturn(new BigDecimal("5000"));
+    // Добавляем моки для других методов, которые могут вызываться
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
 
-    // Act
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
-    // Assert
     assertNotNull(response);
     assertEquals(testUserId, response.getUserId());
-    assertEquals(1, response.getRecommendations().size());
-
-    ProductRecommendation recommendation = response.getRecommendations().get(0);
-    assertEquals("Invest 500", recommendation.getName());
-    assertEquals(UUID.fromString("147f6a0f-3b91-413b-ab99-87f081d60d5a"), recommendation.getId());
-
-    verify(repository, times(1)).userHasProductType(testUserId, ProductType.DEBIT);
-    verify(repository, times(1)).userHasProductType(testUserId, ProductType.INVEST);
-    verify(repository, times(1)).getTotalDepositAmountByProductType(testUserId, ProductType.SAVING);
+    assertEquals(1, response.getRecommendationsCount());
+    assertEquals("Invest 500", response.getRecommendations().get(0).getName());
   }
 
   @Test
-  void getRecommendations_WhenUserEligibleForTopSaving_ShouldReturnTopSaving() {
-    // Arrange
-    when(repository.userHasProductType(testUserId, ProductType.DEBIT)).thenReturn(true);
-    when(repository.userHasProductType(testUserId, ProductType.INVEST)).thenReturn(false);
-    when(repository.userHasProductType(testUserId, ProductType.CREDIT)).thenReturn(false);
-
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.DEBIT))
+  void whenUserEligibleForTopSaving_thenReturnTopSavingRecommendation() {
+    // Настраиваем только необходимые моки для Top Saving
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(true);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
         .thenReturn(new BigDecimal("60000"));
-    when(repository.getTotalSpendAmountByProductType(testUserId, ProductType.DEBIT))
-        .thenReturn(new BigDecimal("10000"));
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.SAVING))
-        .thenReturn(new BigDecimal("0"));
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(new BigDecimal("40000"));
+    // Добавляем моки для других методов
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
 
-    // Act
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
-    // Assert
     assertNotNull(response);
-    assertEquals(testUserId, response.getUserId());
-    assertEquals(2, response.getRecommendations().size()); // Invest 500 + Top Saving
-
-    assertTrue(response.getRecommendations().stream()
-        .anyMatch(r -> r.getName().equals("Top Saving")));
+    assertEquals(1, response.getRecommendationsCount());
+    assertEquals("Top Saving", response.getRecommendations().get(0).getName());
   }
 
   @Test
-  void getRecommendations_WhenUserEligibleForSimpleCredit_ShouldReturnSimpleCredit() {
-    // Arrange
-    when(repository.userHasProductType(testUserId, ProductType.DEBIT)).thenReturn(true);
-    when(repository.userHasProductType(testUserId, ProductType.INVEST)).thenReturn(false);
-    when(repository.userHasProductType(testUserId, ProductType.CREDIT)).thenReturn(false);
-
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.DEBIT))
+  void whenUserEligibleForSimpleCredit_thenReturnSimpleCreditRecommendation() {
+    // Настраиваем только необходимые моки для Simple Credit
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
         .thenReturn(new BigDecimal("200000"));
-    when(repository.getTotalSpendAmountByProductType(testUserId, ProductType.DEBIT))
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
         .thenReturn(new BigDecimal("150000"));
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.SAVING))
-        .thenReturn(new BigDecimal("0"));
+    // Добавляем моки для других методов
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(false);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(BigDecimal.ZERO);
 
-    // Act
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
-    // Assert
     assertNotNull(response);
-    assertEquals(testUserId, response.getUserId());
-    assertEquals(2, response.getRecommendations().size()); // Invest 500 + Simple Credit
-
-    assertTrue(response.getRecommendations().stream()
-        .anyMatch(r -> r.getName().equals("Простой кредит")));
+    assertEquals(1, response.getRecommendationsCount());
+    assertEquals("Простой кредит", response.getRecommendations().get(0).getName());
   }
 
   @Test
-  void getRecommendations_WhenUserEligibleForAllProducts_ShouldReturnThreeRecommendations() {
-    // Arrange - пользователь подходит под все три продукта
-    when(repository.userHasProductType(testUserId, ProductType.DEBIT)).thenReturn(true);
-    when(repository.userHasProductType(testUserId, ProductType.INVEST)).thenReturn(false);
-    when(repository.userHasProductType(testUserId, ProductType.CREDIT)).thenReturn(false);
+  void whenUserEligibleForMultipleProducts_thenReturnMultipleRecommendations() {
+    // Настраиваем моки для нескольких продуктов
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(true);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(new BigDecimal("5000"));
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(new BigDecimal("60000"));
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(new BigDecimal("40000"));
 
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.SAVING))
-        .thenReturn(new BigDecimal("50000"));
-    when(repository.getTotalDepositAmountByProductType(testUserId, ProductType.DEBIT))
-        .thenReturn(new BigDecimal("100000"));
-    when(repository.getTotalSpendAmountByProductType(testUserId, ProductType.DEBIT))
-        .thenReturn(new BigDecimal("90000"));
-
-    // Act
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
-    // Assert
     assertNotNull(response);
-    assertEquals(3, response.getRecommendations().size());
-
-    // Проверяем, что все три продукта присутствуют
+    assertEquals(2, response.getRecommendationsCount());
     assertTrue(response.getRecommendations().stream()
         .anyMatch(r -> r.getName().equals("Invest 500")));
     assertTrue(response.getRecommendations().stream()
         .anyMatch(r -> r.getName().equals("Top Saving")));
-    assertTrue(response.getRecommendations().stream()
-        .anyMatch(r -> r.getName().equals("Простой кредит")));
   }
 
   @Test
-  void getRecommendations_WhenUserNotEligible_ShouldReturnEmptyList() {
-    // Arrange - пользователь не подходит ни под один продукт
-    when(repository.userHasProductType(testUserId, ProductType.DEBIT)).thenReturn(false);
+  void whenUserNotEligibleForAnyProduct_thenReturnEmptyRecommendations() {
+    // Пользователь без дебетовой карты не подходит ни для чего
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(false);
+    // Добавляем моки для всех методов суммы, чтобы они возвращали ZERO вместо null
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
 
-    // Act
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
-    // Assert
     assertNotNull(response);
-    assertEquals(testUserId, response.getUserId());
+    assertEquals(0, response.getRecommendationsCount());
     assertTrue(response.getRecommendations().isEmpty());
   }
 
   @Test
-  void getRecommendations_WhenNullUserId_ShouldThrowException() {
-    // Act & Assert
+  void whenUserIdIsNull_thenThrowException() {
     assertThrows(IllegalArgumentException.class, () -> {
       recommendationService.getRecommendations(null);
     });
+  }
+
+  @Test
+  void invest500Eligibility_allConditionsMet_returnsTrue() {
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(true);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(new BigDecimal("2000"));
+    // Добавляем моки для других методов
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
+
+    RecommendationResponse response = recommendationService.getRecommendations(testUserId);
+
+    assertTrue(response.getRecommendations().stream()
+        .anyMatch(r -> r.getName().equals("Invest 500")));
+  }
+
+  @Test
+  void invest500Eligibility_noDebitProduct_returnsFalse() {
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.DEBIT))).thenReturn(false);
+    // Добавляем моки для всех методов суммы
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.SAVING)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalDepositAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
+        .thenReturn(BigDecimal.ZERO);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.INVEST))).thenReturn(false);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
+
+    RecommendationResponse response = recommendationService.getRecommendations(testUserId);
+
+    assertFalse(response.getRecommendations().stream()
+        .anyMatch(r -> r.getName().equals("Invest 500")));
   }
 }

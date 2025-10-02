@@ -78,7 +78,9 @@ public class RecommendationService {
     boolean noInvest = !repository.userHasProductType(userId, ProductType.INVEST);
     // Правило 3: Сумма пополнений SAVING > 1000
     BigDecimal savingDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.SAVING);
-    boolean savingCondition = savingDeposit.compareTo(new BigDecimal("1000")) > 0;
+    // Обработка null значения
+    BigDecimal savingAmount = savingDeposit != null ? savingDeposit : BigDecimal.ZERO;
+    boolean savingCondition = savingAmount.compareTo(new BigDecimal("1000")) > 0;
 
     return hasDebit && noInvest && savingCondition;
   }
@@ -90,12 +92,18 @@ public class RecommendationService {
     // Правило 2: (Сумма пополнений DEBIT >= 50k) ИЛИ (Сумма пополнений SAVING >= 50k)
     BigDecimal debitDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
     BigDecimal savingDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.SAVING);
-    boolean depositCondition = debitDeposit.compareTo(new BigDecimal("50000")) >= 0 ||
-        savingDeposit.compareTo(new BigDecimal("50000")) >= 0;
+
+    // Обработка null значений
+    BigDecimal debitAmount = debitDeposit != null ? debitDeposit : BigDecimal.ZERO;
+    BigDecimal savingAmount = savingDeposit != null ? savingDeposit : BigDecimal.ZERO;
+
+    boolean depositCondition = debitAmount.compareTo(new BigDecimal("50000")) >= 0 ||
+        savingAmount.compareTo(new BigDecimal("50000")) >= 0;
 
     // Правило 3: Сумма пополнений DEBIT > суммы трат DEBIT
     BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
-    boolean balanceCondition = debitDeposit.compareTo(debitSpend) > 0;
+    BigDecimal spendAmount = debitSpend != null ? debitSpend : BigDecimal.ZERO;
+    boolean balanceCondition = debitAmount.compareTo(spendAmount) > 0;
 
     return hasDebit && depositCondition && balanceCondition;
   }
@@ -107,10 +115,15 @@ public class RecommendationService {
     // Правило 2: Сумма пополнений DEBIT > суммы трат DEBIT
     BigDecimal debitDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
     BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
-    boolean balanceCondition = debitDeposit.compareTo(debitSpend) > 0;
+
+    // Обработка null значений
+    BigDecimal debitAmount = debitDeposit != null ? debitDeposit : BigDecimal.ZERO;
+    BigDecimal spendAmount = debitSpend != null ? debitSpend : BigDecimal.ZERO;
+
+    boolean balanceCondition = debitAmount.compareTo(spendAmount) > 0;
 
     // Правило 3: Сумма трат DEBIT > 100,000
-    boolean spendCondition = debitSpend.compareTo(new BigDecimal("100000")) > 0;
+    boolean spendCondition = spendAmount.compareTo(new BigDecimal("100000")) > 0;
 
     return noCredit && balanceCondition && spendCondition;
   }
