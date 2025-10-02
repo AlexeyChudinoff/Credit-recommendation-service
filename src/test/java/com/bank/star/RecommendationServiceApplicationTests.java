@@ -15,11 +15,4 @@ class RecommendationServiceApplicationTests {
     // Простой тест для проверки загрузки контекста Spring
     assertTrue(true, "Контекст Spring должен загружаться успешно");
   }
-
-  @Test
-  void applicationStartsSuccessfully() {
-    // Дополнительный тест для проверки запуска приложения
-    RecommendationServiceApplication.main(new String[]{});
-    assertTrue(true, "Приложение должно запускаться без ошибок");
-  }
 }

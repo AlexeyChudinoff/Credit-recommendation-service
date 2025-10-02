@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     user_id VARCHAR(36) NOT NULL,
     product_id VARCHAR(36) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
-    transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('DEPOSIT', 'WITHDRAWAL')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAWAL')), -- ИСПРАВЛЕНИЕ: type вместо transaction_type
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
