@@ -1,15 +1,15 @@
 package com.bank.star.service;
 
+import com.bank.star.dto.ProductRecommendation;
+import com.bank.star.dto.RecommendationResponse;
+import com.bank.star.exception.UserNotFoundException;
+import com.bank.star.service.rules.ProductRuleSets;
+import com.bank.star.service.rules.RecommendationRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.bank.star.dto.ProductRecommendation;
-import com.bank.star.dto.RecommendationResponse;
-import com.bank.star.model.ProductType;
-import com.bank.star.repository.RecommendationRepository;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -17,7 +17,8 @@ public class RecommendationService {
 
   private static final Logger logger = LoggerFactory.getLogger(RecommendationService.class);
 
-  private final RecommendationRepository repository;
+  private final ProductRuleSets productRuleSets;
+  private final com.bank.star.repository.RecommendationRepository repository;
 
   // Предопределенные продукты для рекомендаций
   private final Map<String, ProductRecommendation> products = Map.of(
@@ -39,92 +40,50 @@ public class RecommendationService {
   );
 
   @Autowired
-  public RecommendationService(RecommendationRepository repository) {
+  public RecommendationService(ProductRuleSets productRuleSets,
+      com.bank.star.repository.RecommendationRepository repository) {
+    this.productRuleSets = productRuleSets;
     this.repository = repository;
   }
 
   public RecommendationResponse getRecommendations(UUID userId) {
-    logger.info("Getting recommendations for user: {}", userId);
+    logger.info("🔄 Getting recommendations for user: {}", userId);
+
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
+    // Проверка существования пользователя
+    if (!repository.userExists(userId)) {
+      throw new UserNotFoundException("User not found: " + userId);
+    }
+
     List<ProductRecommendation> recommendations = new ArrayList<>();
+    Map<String, Boolean> eligibilityAnalysis = new HashMap<>();
 
-    // Проверяем каждое правило рекомендаций
-    if (isEligibleForInvest500(userId)) {
-      recommendations.add(products.get("Invest 500"));
-      logger.debug("User {} is eligible for Invest 500", userId);
-    }
+    // Проверяем правила для каждого продукта
+    checkProductEligibility("Invest 500", productRuleSets.getInvest500RuleSet(),
+        userId, recommendations, eligibilityAnalysis);
+    checkProductEligibility("Top Saving", productRuleSets.getTopSavingRuleSet(),
+        userId, recommendations, eligibilityAnalysis);
+    checkProductEligibility("Простой кредит", productRuleSets.getSimpleCreditRuleSet(),
+        userId, recommendations, eligibilityAnalysis);
 
-    if (isEligibleForTopSaving(userId)) {
-      recommendations.add(products.get("Top Saving"));
-      logger.debug("User {} is eligible for Top Saving", userId);
-    }
+    logger.info("✅ Found {} recommendations for user {}", recommendations.size(), userId);
+    logger.debug("Eligibility analysis for user {}: {}", userId, eligibilityAnalysis);
 
-    if (isEligibleForSimpleCredit(userId)) {
-      recommendations.add(products.get("Простой кредит"));
-      logger.debug("User {} is eligible for Simple Credit", userId);
-    }
-
-    logger.info("Found {} recommendations for user {}", recommendations.size(), userId);
     return new RecommendationResponse(userId, recommendations);
   }
 
-  private boolean isEligibleForInvest500(UUID userId) {
-    // Правило 1: Наличие DEBIT продукта
-    boolean hasDebit = repository.userHasProductType(userId, ProductType.DEBIT);
-    // Правило 2: Отсутствие INVEST продуктов
-    boolean noInvest = !repository.userHasProductType(userId, ProductType.INVEST);
-    // Правило 3: Сумма пополнений SAVING > 1000
-    BigDecimal savingDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.SAVING);
-    // Обработка null значения
-    BigDecimal savingAmount = savingDeposit != null ? savingDeposit : BigDecimal.ZERO;
-    boolean savingCondition = savingAmount.compareTo(new BigDecimal("1000")) > 0;
+  private void checkProductEligibility(String productName, RecommendationRule rule,
+      UUID userId, List<ProductRecommendation> recommendations,
+      Map<String, Boolean> eligibilityAnalysis) {
+    boolean isEligible = rule.isEligible(userId);
+    eligibilityAnalysis.put(productName, isEligible);
 
-    return hasDebit && noInvest && savingCondition;
-  }
-
-  private boolean isEligibleForTopSaving(UUID userId) {
-    // Правило 1: Наличие DEBIT продукта
-    boolean hasDebit = repository.userHasProductType(userId, ProductType.DEBIT);
-
-    // Правило 2: (Сумма пополнений DEBIT >= 50k) ИЛИ (Сумма пополнений SAVING >= 50k)
-    BigDecimal debitDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
-    BigDecimal savingDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.SAVING);
-
-    // Обработка null значений
-    BigDecimal debitAmount = debitDeposit != null ? debitDeposit : BigDecimal.ZERO;
-    BigDecimal savingAmount = savingDeposit != null ? savingDeposit : BigDecimal.ZERO;
-
-    boolean depositCondition = debitAmount.compareTo(new BigDecimal("50000")) >= 0 ||
-        savingAmount.compareTo(new BigDecimal("50000")) >= 0;
-
-    // Правило 3: Сумма пополнений DEBIT > суммы трат DEBIT
-    BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
-    BigDecimal spendAmount = debitSpend != null ? debitSpend : BigDecimal.ZERO;
-    boolean balanceCondition = debitAmount.compareTo(spendAmount) > 0;
-
-    return hasDebit && depositCondition && balanceCondition;
-  }
-
-  private boolean isEligibleForSimpleCredit(UUID userId) {
-    // Правило 1: Отсутствие CREDIT продуктов
-    boolean noCredit = !repository.userHasProductType(userId, ProductType.CREDIT);
-
-    // Правило 2: Сумма пополнений DEBIT > суммы трат DEBIT
-    BigDecimal debitDeposit = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
-    BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
-
-    // Обработка null значений
-    BigDecimal debitAmount = debitDeposit != null ? debitDeposit : BigDecimal.ZERO;
-    BigDecimal spendAmount = debitSpend != null ? debitSpend : BigDecimal.ZERO;
-
-    boolean balanceCondition = debitAmount.compareTo(spendAmount) > 0;
-
-    // Правило 3: Сумма трат DEBIT > 100,000
-    boolean spendCondition = spendAmount.compareTo(new BigDecimal("100000")) > 0;
-
-    return noCredit && balanceCondition && spendCondition;
+    if (isEligible) {
+      recommendations.add(products.get(productName));
+      logger.debug("User {} is eligible for {}", userId, productName);
+    }
   }
 }
