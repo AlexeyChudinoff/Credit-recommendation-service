@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -256,35 +255,5 @@ public class RecommendationController {
         """);
   }
 
-  /**
-   * Обработчик исключений для неверного формата UUID
-   */
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
-    logger.warn("❌ Ошибка валидации UUID: {}", e.getMessage());
-
-    ErrorResponse error = new ErrorResponse(
-        "VALIDATION_ERROR",
-        "Неверный формат UUID пользователя: " + e.getMessage(),
-        LocalDateTime.now()
-    );
-
-    return ResponseEntity.badRequest().body(error);
-  }
-
-  /**
-   * Глобальный обработчик всех исключений
-   */
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleAllExceptions(Exception e) {
-    logger.error("🚨 Внутренняя ошибка сервера при обработке запроса: {}", e.getMessage(), e);
-
-    ErrorResponse error = new ErrorResponse(
-        "INTERNAL_SERVER_ERROR",
-        "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте позже.",
-        LocalDateTime.now()
-    );
-
-    return ResponseEntity.internalServerError().body(error);
-  }
+  // ⚠️ ВСЕ ОБРАБОТЧИКИ ИСКЛЮЧЕНИЙ УДАЛЕНЫ - они теперь в GlobalExceptionHandler
 }
