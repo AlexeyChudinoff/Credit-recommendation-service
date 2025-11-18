@@ -1,28 +1,39 @@
 package com.bank.star.model;
 
+import lombok.Getter;
+
 /**
  * Перечисление типов банковских продуктов
  */
+@Getter
 public enum ProductType {
   /**
    * Дебетовые продукты (карты, счета)
    */
-  DEBIT,
+  DEBIT("DEBIT", "Дебетовый продукт"),
 
   /**
    * Кредитные продукты (кредиты, займы)
    */
-  CREDIT,
+  CREDIT("CREDIT", "Кредитный продукт"),
 
   /**
    * Сберегательные продукты (вклады, накопления)
    */
-  SAVING,
+  SAVING("SAVING", "Сберегательный продукт"),
 
   /**
    * Инвестиционные продукты (ИИС, брокерские счета)
    */
-  INVEST;
+  INVEST("INVEST", "Инвестиционный продукт");
+
+  private final String code;
+  private final String russianName;
+
+  ProductType(String code, String russianName) {
+    this.code = code;
+    this.russianName = russianName;
+  }
 
   /**
    * Проверяет, является ли тип продукта дебетовым
@@ -59,18 +70,40 @@ public enum ProductType {
     if (value == null) {
       throw new IllegalArgumentException("Value cannot be null");
     }
-    return ProductType.valueOf(value.toUpperCase());
+    for (ProductType type : ProductType.values()) {
+      if (type.code.equalsIgnoreCase(value)) {
+        return type;
+      }
+    }
+    throw new IllegalArgumentException("Unknown ProductType: " + value);
   }
 
   /**
-   * Возвращает русское название типа продукта
+   * Проверяет, является ли строка валидным ProductType
    */
-  public String getRussianName() {
-    return switch (this) {
-      case DEBIT -> "Дебетовый продукт";
-      case CREDIT -> "Кредитный продукт";
-      case SAVING -> "Сберегательный продукт";
-      case INVEST -> "Инвестиционный продукт";
-    };
+  public static boolean isValidType(String value) {
+    try {
+      fromString(value);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Возвращает все возможные значения как строки
+   */
+  public static String[] getStringValues() {
+    ProductType[] values = values();
+    String[] stringValues = new String[values.length];
+    for (int i = 0; i < values.length; i++) {
+      stringValues[i] = values[i].code;
+    }
+    return stringValues;
+  }
+
+  @Override
+  public String toString() {
+    return code;
   }
 }
