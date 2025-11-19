@@ -1,3 +1,4 @@
+//композитные правила (AND/OR логика)
 package com.bank.star.service.rules;
 
 import java.util.Arrays;

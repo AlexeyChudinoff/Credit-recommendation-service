@@ -1,0 +1,33 @@
+Способы запуска с разными профилями
+Через командную строку:
+1
+bash
+# Разработка
+mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Продакшен
+mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+
+# Несколько профилей
+mvnw spring-boot:run -Dspring-boot.run.profiles=dev,debug
+
+2
+В IDE (IntelliJ IDEA):
+Run → Edit Configurations
+
+Выберите вашу конфигурацию
+
+В поле VM options добавьте:
+
+text
+-Dspring.profiles.active=dev
+Или в Program arguments:
+
+text
+--spring.profiles.active=dev
+
+3
+Через переменные окружения:
+bash
+export SPRING_PROFILES_ACTIVE=prod
+java -jar your-app.jar

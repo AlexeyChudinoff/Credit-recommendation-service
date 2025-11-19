@@ -1,3 +1,4 @@
+//атомарные правила (базовые проверки)
 package com.bank.star.service.rules;
 
 import com.bank.star.model.ProductType;
