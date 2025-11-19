@@ -4,13 +4,14 @@ package com.bank.star.service;
 import com.bank.star.dto.ProductRecommendation;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.exception.UserNotFoundException;
+import com.bank.star.model.ProductType;
 import com.bank.star.service.rules.ProductRuleSets;
-import com.bank.star.service.rules.RecommendationRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -54,37 +55,54 @@ public class RecommendationService {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
-    // Проверка существования пользователя
     if (!repository.userExists(userId)) {
       throw new UserNotFoundException("User not found: " + userId);
     }
 
-    List<ProductRecommendation> recommendations = new ArrayList<>();
-    Map<String, Boolean> eligibilityAnalysis = new HashMap<>();
+    // ДИАГНОСТИКА ТИПОВ ТРАНЗАКЦИЙ
+    repository.diagnoseTransactionTypes(userId);
 
-    // Проверяем правила для каждого продукта
-    checkProductEligibility("Invest 500", productRuleSets.getInvest500RuleSet(),
-        userId, recommendations, eligibilityAnalysis);
-    checkProductEligibility("Top Saving", productRuleSets.getTopSavingRuleSet(),
-        userId, recommendations, eligibilityAnalysis);
-    checkProductEligibility("Простой кредит", productRuleSets.getSimpleCreditRuleSet(),
-        userId, recommendations, eligibilityAnalysis);
+    List<ProductRecommendation> recommendations = new ArrayList<>();
+
+    // ДЕТАЛЬНАЯ ДИАГНОСТИКА ПРАВИЛ
+    logger.info("🔍 DETAILED DIAGNOSTICS for user {}:", userId);
+
+    // Проверяем каждое условие отдельно для Simple Credit
+    boolean noCredit = repository.userHasProductType(userId, ProductType.CREDIT);
+    BigDecimal debitDeposits = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
+    BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
+
+    logger.info("🔍 SimpleCredit conditions:");
+    logger.info("🔍   - No CREDIT products: {}", !noCredit);
+    logger.info("🔍   - DEBIT deposits: {}, DEBIT spend: {}", debitDeposits, debitSpend);
+    logger.info("🔍   - Deposits > Spend: {}", debitDeposits != null && debitSpend != null && debitDeposits.compareTo(debitSpend) > 0);
+    logger.info("🔍   - Spend > 100K: {}", debitSpend != null && debitSpend.compareTo(new BigDecimal("100000")) > 0);
+
+    // Проверяем eligibility
+    boolean simpleCreditEligible = productRuleSets.getSimpleCreditRuleSet().isEligible(userId);
+    boolean topSavingEligible = productRuleSets.getTopSavingRuleSet().isEligible(userId);
+    boolean invest500Eligible = productRuleSets.getInvest500RuleSet().isEligible(userId);
+
+    logger.info("🔍 Final eligibility - SimpleCredit: {}, TopSaving: {}, Invest500: {}",
+        simpleCreditEligible, topSavingEligible, invest500Eligible);
+
+    // Добавляем все подходящие продукты
+    if (simpleCreditEligible) {
+      recommendations.add(products.get("Простой кредит"));
+      logger.info("🔍 ADDED Простой кредит");
+    }
+
+    if (topSavingEligible) {
+      recommendations.add(products.get("Top Saving"));
+      logger.info("🔍 ADDED Top Saving");
+    }
+
+    if (invest500Eligible) {
+      recommendations.add(products.get("Invest 500"));
+      logger.info("🔍 ADDED Invest 500");
+    }
 
     logger.info("✅ Found {} recommendations for user {}", recommendations.size(), userId);
-    logger.debug("Eligibility analysis for user {}: {}", userId, eligibilityAnalysis);
-
     return new RecommendationResponse(userId, recommendations);
-  }
-
-  private void checkProductEligibility(String productName, RecommendationRule rule,
-      UUID userId, List<ProductRecommendation> recommendations,
-      Map<String, Boolean> eligibilityAnalysis) {
-    boolean isEligible = rule.isEligible(userId);
-    eligibilityAnalysis.put(productName, isEligible);
-
-    if (isEligible) {
-      recommendations.add(products.get(productName));
-      logger.debug("User {} is eligible for {}", userId, productName);
-    }
   }
 }
