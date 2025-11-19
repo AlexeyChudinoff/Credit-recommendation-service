@@ -1,3 +1,4 @@
+//JPA репозиторий для работы с динамическими правилами
 package com.bank.star.repository;
 
 import com.bank.star.model.DynamicRule;

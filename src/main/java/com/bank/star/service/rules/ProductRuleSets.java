@@ -1,3 +1,4 @@
+//наборы правил для конкретных продуктов
 package com.bank.star.service.rules;
 
 import com.bank.star.model.ProductType;

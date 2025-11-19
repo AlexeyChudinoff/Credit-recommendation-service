@@ -1,3 +1,4 @@
+//основной API рекомендаций
 package com.bank.star.controller;
 
 import com.bank.star.dto.ErrorResponse;

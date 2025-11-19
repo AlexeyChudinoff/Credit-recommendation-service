@@ -1,3 +1,4 @@
+//настройка Swagger/OpenAPI документации
 package com.bank.star.config;
 
 import io.swagger.v3.oas.models.OpenAPI;

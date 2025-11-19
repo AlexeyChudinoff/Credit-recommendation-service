@@ -1,3 +1,4 @@
+//тестирование БД и отладка рекомендаций
 package com.bank.star.controller;
 
 import java.math.BigDecimal;

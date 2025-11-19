@@ -1,3 +1,4 @@
+//JDBC репозиторий для аналитических запросов
 package com.bank.star.repository;
 
 import com.bank.star.model.ProductType;

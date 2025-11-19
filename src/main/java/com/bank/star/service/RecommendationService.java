@@ -1,3 +1,4 @@
+//основной сервис рекомендаций
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
