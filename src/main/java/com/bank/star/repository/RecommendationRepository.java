@@ -38,7 +38,7 @@ public class RecommendationRepository {
     try {
       Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, userId.toString(),
           type.name());
-      return result != null && result;
+      return Boolean.TRUE.equals(result);
     } catch (Exception e) {
       logger.error("Error checking product type for user {}: {}", userId, e.getMessage());
       return false;
@@ -71,17 +71,17 @@ public class RecommendationRepository {
 
   /**
    * Возвращает сумму трат по указанному типу продукта
-   * ИСПРАВЛЕНИЕ: используем t.type (CHARACTER VARYING)
+   * ИСПРАВЛЕНИЕ: используем t.type = 'WITHDRAW' (реальное название в базе)
    */
   public BigDecimal getTotalSpendAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total spends for user {} and product type {}", userId, type);
 
     String sql = """
-        SELECT COALESCE(SUM(t.amount), 0) 
-        FROM transactions t 
-        JOIN products p ON t.product_id = p.id 
-        WHERE t.user_id = ? AND p.type = ? AND t.type = 'WITHDRAWAL'
-        """;
+      SELECT COALESCE(SUM(t.amount), 0) 
+      FROM transactions t 
+      JOIN products p ON t.product_id = p.id 
+      WHERE t.user_id = ? AND p.type = ? AND t.type = 'WITHDRAW'
+      """;
 
     try {
       BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
@@ -151,10 +151,31 @@ public class RecommendationRepository {
 
     try {
       Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, userId.toString());
-      return result != null && result;
+      return Boolean.TRUE.equals(result);
     } catch (Exception e) {
       logger.error("Error checking if user exists {}: {}", userId, e.getMessage());
       return false;
+    }
+  }
+
+  /**
+   * Диагностика: проверяет суммы по разным типам транзакций
+   * ИСПРАВЛЕНИЕ: используем только реальные типы из базы - DEPOSIT и WITHDRAW
+   */
+  public void diagnoseTransactionTypes(UUID userId) {
+    logger.info("🔍 TRANSACTION TYPE DIAGNOSTICS for user {}:", userId);
+
+    // Используем реальные типы из базы: DEPOSIT и WITHDRAW
+    String[] types = {"DEPOSIT", "WITHDRAW"};
+
+    for (String type : types) {
+      String sql = "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = ?";
+      try {
+        BigDecimal total = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type);
+        logger.info("🔍 {} transactions total: {}", type, total);
+      } catch (Exception e) {
+        logger.error("Error getting {} total: {}", type, e.getMessage());
+      }
     }
   }
 }
