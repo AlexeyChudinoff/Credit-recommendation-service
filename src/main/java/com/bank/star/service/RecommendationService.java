@@ -1,10 +1,12 @@
 //основной сервис рекомендаций
+//основной сервис рекомендаций
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.exception.UserNotFoundException;
 import com.bank.star.model.ProductType;
+import com.bank.star.repository.DynamicRuleRepository;
 import com.bank.star.service.rules.ProductRuleSets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,8 @@ public class RecommendationService {
 
   private final ProductRuleSets productRuleSets;
   private final com.bank.star.repository.RecommendationRepository repository;
+  private final DynamicRuleRepository dynamicRuleRepository;
+  private final InMemoryRuleStatisticsService statisticsService;
 
   // Предопределенные продукты для рекомендаций
   private final Map<String, ProductRecommendation> products = Map.of(
@@ -43,9 +47,13 @@ public class RecommendationService {
 
   @Autowired
   public RecommendationService(ProductRuleSets productRuleSets,
-      com.bank.star.repository.RecommendationRepository repository) {
+      com.bank.star.repository.RecommendationRepository repository,
+      DynamicRuleRepository dynamicRuleRepository,
+      InMemoryRuleStatisticsService statisticsService) {
     this.productRuleSets = productRuleSets;
     this.repository = repository;
+    this.dynamicRuleRepository = dynamicRuleRepository;
+    this.statisticsService = statisticsService;
   }
 
   public RecommendationResponse getRecommendations(UUID userId) {
@@ -102,7 +110,28 @@ public class RecommendationService {
       logger.info("🔍 ADDED Invest 500");
     }
 
+    // После формирования рекомендаций обновляем статистику
+    updateRuleStatistics(recommendations);
+
     logger.info("✅ Found {} recommendations for user {}", recommendations.size(), userId);
     return new RecommendationResponse(userId, recommendations);
+  }
+
+  private void updateRuleStatistics(List<ProductRecommendation> recommendations) {
+    for (ProductRecommendation recommendation : recommendations) {
+      // Находим правило по productId и обновляем статистику в памяти
+      dynamicRuleRepository.findByProductId(recommendation.getId())
+          .ifPresent(rule -> {
+            statisticsService.incrementRuleCount(rule.getId());
+            logger.debug("Updated statistics for rule {}: {}", rule.getId(),
+                statisticsService.getRuleCount(rule.getId()));
+          });
+    }
+  }
+
+  // Метод для сброса кеша
+  public void clearCaches() {
+    statisticsService.clearStatistics();
+    logger.info("🧹 All caches cleared");
   }
 }

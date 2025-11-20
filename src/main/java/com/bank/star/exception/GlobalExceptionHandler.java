@@ -1,3 +1,4 @@
+//централизованная обработка исключений
 package com.bank.star.exception;
 
 import com.bank.star.dto.ErrorResponse;

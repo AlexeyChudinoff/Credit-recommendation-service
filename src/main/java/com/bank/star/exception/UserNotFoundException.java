@@ -1,3 +1,4 @@
+// кастомные исключения
 package com.bank.star.exception;
 
 public class UserNotFoundException extends RuntimeException {

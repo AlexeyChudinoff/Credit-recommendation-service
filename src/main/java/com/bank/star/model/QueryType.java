@@ -1,3 +1,4 @@
+//enum типов запросов
 package com.bank.star.model;
 
 import lombok.Getter;

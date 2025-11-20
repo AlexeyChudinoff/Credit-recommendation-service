@@ -1,3 +1,4 @@
+//для динамических правил
 package com.bank.star.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -1,3 +1,4 @@
+//условия правил
 package com.bank.star.dto;
 
 import com.bank.star.model.QueryType;

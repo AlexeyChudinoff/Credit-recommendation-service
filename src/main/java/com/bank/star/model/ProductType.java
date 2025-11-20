@@ -1,3 +1,4 @@
+// enum типов продуктов
 package com.bank.star.model;
 
 import lombok.Getter;
