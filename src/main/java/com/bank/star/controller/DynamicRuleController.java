@@ -1,4 +1,4 @@
-//API для динамических правил
+//API для управление динамическими правилами
 package com.bank.star.controller;
 
 import com.bank.star.dto.*;

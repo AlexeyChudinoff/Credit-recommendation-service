@@ -1,3 +1,4 @@
+//JPA сущность динамических правил
 package com.bank.star.model;
 
 import jakarta.persistence.*;

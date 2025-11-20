@@ -1,3 +1,4 @@
+//условия правил
 package com.bank.star.model;
 
 import jakarta.persistence.*;
