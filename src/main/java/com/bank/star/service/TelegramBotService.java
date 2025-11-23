@@ -119,7 +119,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
     return sb.toString();
   }
 
-  private void sendHelpMessage(Long chatId) {
+  void sendHelpMessage(Long chatId) {
     String helpText = """
             🏦 Bank Star Recommendation Bot
             
@@ -134,11 +134,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     sendMessage(chatId, helpText);
   }
 
-  private void sendUnknownCommandMessage(Long chatId) {
+  void sendUnknownCommandMessage(Long chatId) {
     sendMessage(chatId, "❌ Неизвестная команда. Используйте /help для списка команд.");
   }
 
-  private void sendMessage(Long chatId, String text) {
+  void sendMessage(Long chatId, String text) {
     SendMessage message = new SendMessage();
     message.setChatId(chatId.toString());
     message.setText(text);
