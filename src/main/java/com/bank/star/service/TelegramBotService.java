@@ -13,8 +13,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -31,6 +29,27 @@ public class TelegramBotService extends TelegramLongPollingBot {
   @Value("${telegram.bot.username:alex_Bank_Star_bot}")
   private String botUsername;
 
+  // Тестовые пользователи для демонстрации
+  private static final String TEST_USERS_INFO = """
+      👥 <b>Тестовые пользователи для демонстрации:</b>
+      
+      💎 <b>Invest 500</b> (инвестиции)
+      👤 <code>cd515076-5d8a-44be-930e-8d4fcb79f42d</code>
+      📊 Имеет дебетовые продукты + сбережения > 1,000 ₽
+      
+      🏦 <b>Top Saving</b> (премиальные накопления)  
+      👤 <code>d4a4d619-9a0c-4fc5-b0cb-76c49409546b</code>
+      📊 Большие пополнения (≥ 50,000 ₽) + положительный баланс
+      
+      💳 <b>Простой кредит</b> (базовый кредит)
+      👤 <code>1f9b149c-6577-448a-bc94-16bea229b71a</code>
+      📊 Большие траты (> 100,000 ₽) + нет текущих кредитов
+      
+      ❌ <b>Без рекомендаций</b>
+      👤 <code>a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6</code>
+      📊 Не подходит под правила рекомендаций
+      """;
+
   public TelegramBotService(RecommendationService recommendationService,
       UserNameResolver userNameResolver) {
     this.recommendationService = recommendationService;
@@ -38,7 +57,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     logger.info("🤖 Telegram Bot инициализирован:");
     logger.info("   Username: {}", botUsername);
-    logger.info("   Token: {}", botToken);
+    logger.info("   Token: {}", botToken != null ? botToken.substring(0, 10) + "..." : "null");
   }
 
   @Override
@@ -64,6 +83,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
         sendHelpMessage(chatId);
       } else if (text.startsWith("/recommend")) {
         handleRecommendCommand(chatId, text);
+      } else if (text.startsWith("/testusers")) {
+        sendTestUsersInfo(chatId);
       } else {
         sendUnknownCommandMessage(chatId);
       }
@@ -74,15 +95,32 @@ public class TelegramBotService extends TelegramLongPollingBot {
     try {
       String[] parts = text.split("\\s+", 2);
       if (parts.length < 2) {
-        sendMessage(chatId, "❌ Пожалуйста, укажите имя пользователя: /recommend username");
+        sendMessage(chatId, "❌ Пожалуйста, укажите ID пользователя: /recommend user_id");
+        sendMessage(chatId, "📋 Используйте /testusers чтобы посмотреть тестовые ID");
         return;
       }
 
-      String username = parts[1].trim();
-      UUID userId = userNameResolver.resolveUserId(username);
+      String userInput = parts[1].trim();
+
+      // Пытаемся найти пользователя по username или UUID
+      UUID userId = null;
+
+      // Если введен UUID
+      if (userInput.matches("[0-9a-fA-F-]{36}")) {
+        try {
+          userId = UUID.fromString(userInput);
+        } catch (IllegalArgumentException e) {
+          sendMessage(chatId, "❌ Неверный формат UUID. Используйте /testusers для примеров");
+          return;
+        }
+      } else {
+        // Если введен username
+        userId = userNameResolver.resolveUserId(userInput);
+      }
 
       if (userId == null) {
-        sendMessage(chatId, "❌ Пользователь не найден");
+        sendMessage(chatId, "❌ Пользователь не найден. Проверьте ID или username");
+        sendMessage(chatId, "📋 Используйте /testusers чтобы посмотреть тестовые ID");
         return;
       }
 
@@ -106,10 +144,10 @@ public class TelegramBotService extends TelegramLongPollingBot {
       sb.append("📭 К сожалению, у нас пока нет подходящих продуктов для вас.\n");
       sb.append("Продолжайте пользоваться нашими услугами, и мы обязательно предложим вам что-то интересное!");
     } else {
-      sb.append("🎯 Новые продукты для вас:\n\n");
+      sb.append("🎯 <b>Новые продукты для вас:</b>\n\n");
 
       for (ProductRecommendation product : response.getRecommendations()) {
-        sb.append("💎 ").append(product.getName()).append("\n");
+        sb.append("💎 <b>").append(product.getName()).append("</b>\n");
         sb.append("📝 ").append(product.getText()).append("\n\n");
       }
 
@@ -121,27 +159,40 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
   void sendHelpMessage(Long chatId) {
     String helpText = """
-            🏦 Bank Star Recommendation Bot
+            🏦 <b>Bank Star Recommendation Bot</b>
             
-            Доступные команды:
+            🤖 <b>Доступные команды:</b>
             /start - начать работу
             /help - показать эту справку
-            /recommend [username] - получить рекомендации для пользователя
+            /recommend [user_id] - получить рекомендации для пользователя
+            /testusers - показать тестовых пользователей
             
-            Пример:
-            /recommend ivanov
+            📝 <b>Примеры использования:</b>
+            <code>/recommend cd515076-5d8a-44be-930e-8d4fcb79f42d</code>
+            <code>/recommend invest_user</code>
+            
+            👥 Для тестирования используйте команду <b>/testusers</b> чтобы увидеть всех тестовых пользователей!
             """;
     sendMessage(chatId, helpText);
   }
 
+  void sendTestUsersInfo(Long chatId) {
+    sendMessage(chatId, TEST_USERS_INFO);
+  }
+
   void sendUnknownCommandMessage(Long chatId) {
-    sendMessage(chatId, "❌ Неизвестная команда. Используйте /help для списка команд.");
+    String message = "❌ Неизвестная команда.\n\n" +
+        "📋 Используйте:\n" +
+        "/help - список команд\n" +
+        "/testusers - тестовые пользователи";
+    sendMessage(chatId, message);
   }
 
   void sendMessage(Long chatId, String text) {
     SendMessage message = new SendMessage();
     message.setChatId(chatId.toString());
     message.setText(text);
+    message.enableHtml(true); // Включаем HTML разметку для красивого форматирования
 
     try {
       execute(message);

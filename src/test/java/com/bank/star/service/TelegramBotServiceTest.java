@@ -5,6 +5,8 @@ import com.bank.star.dto.RecommendationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -16,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+// используем Mockito без полного Spring контекста
 class TelegramBotServiceTest {
 
   @Mock
@@ -33,15 +36,35 @@ class TelegramBotServiceTest {
   @BeforeEach
   void setup() throws TelegramApiException {
     MockitoAnnotations.openMocks(this);
-    telegramBotService = spy(new TelegramBotService(recommendationService, userNameResolver));
-    // Правильно мокируем execute - он не void, возвращаем null при вызове
+
+    // Создаем бота и устанавливаем значения через reflection
+    telegramBotService = new TelegramBotService(recommendationService, userNameResolver);
+
+    // Устанавливаем значения полей через reflection
+    setField(telegramBotService, "botToken", "8216912842:AAGA3YbcEZHRHSB7QLA8i2mwGlfbQSLyzDU");
+    setField(telegramBotService, "botUsername", "alex_Bank_Star_bot");
+
+    // Спай для мокирования execute
+    telegramBotService = spy(telegramBotService);
     doAnswer(invocation -> null).when(telegramBotService).execute(any(SendMessage.class));
+  }
+
+  private void setField(Object target, String fieldName, Object value) {
+    try {
+      var field = target.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(target, value);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to set field " + fieldName, e);
+    }
   }
 
   @Test
   void testGetBotUsernameAndToken() {
     assertNotNull(telegramBotService.getBotUsername());
     assertNotNull(telegramBotService.getBotToken());
+    assertEquals("alex_Bank_Star_bot", telegramBotService.getBotUsername());
+    assertEquals("8216912842:AAGA3YbcEZHRHSB7QLA8i2mwGlfbQSLyzDU", telegramBotService.getBotToken());
   }
 
   @Test
@@ -85,8 +108,8 @@ class TelegramBotServiceTest {
 
     telegramBotService.onUpdateReceived(update);
 
-    verify(telegramBotService).sendMessage(eq(123L), argThat(msg -> msg.contains("Здравствуйте, Test User")));
-    verify(telegramBotService).sendMessage(eq(123L), argThat(msg -> msg.contains("Новыe продукты для вас")));
+    verify(telegramBotService).sendMessage(eq(123L), argThat(msg ->
+        msg.contains("Здравствуйте, Test User") && msg.contains("Новые продукты")));
   }
 
   @Test
