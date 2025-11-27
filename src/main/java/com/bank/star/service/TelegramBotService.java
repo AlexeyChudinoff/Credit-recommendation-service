@@ -3,6 +3,7 @@ package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
 import com.bank.star.dto.RecommendationResponse;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,10 +30,10 @@ public class TelegramBotService extends TelegramLongPollingBot {
   private final RecommendationService recommendationService;
   private final UserNameResolver userNameResolver;
 
-  @Value("${telegram.bot.token:8216912842:AAGA3YbcEZHRHSB7QLA8i2mwGlfbQSLyzDU}")
+  @Value("${telegram.bot.token}")
   private String botToken;
 
-  @Value("${telegram.bot.username:alex_Bank_Star_bot}")
+  @Value("${telegram.bot.username}")
   private String botUsername;
 
   // Тестовые пользователи для демонстрации
@@ -60,11 +61,15 @@ public class TelegramBotService extends TelegramLongPollingBot {
       UserNameResolver userNameResolver) {
     this.recommendationService = recommendationService;
     this.userNameResolver = userNameResolver;
+  }
 
+  @PostConstruct
+  public void init() {
     logger.info("🤖 Telegram Bot инициализирован:");
     logger.info("   Username: {}", botUsername);
     logger.info("   Token: {}", botToken != null ? botToken.substring(0, 10) + "..." : "null");
   }
+
 
   @Override
   public String getBotUsername() {
