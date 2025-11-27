@@ -37,30 +37,28 @@ class RecommendationServiceApplicationIntegrationTest {
 
   @Test
   void debugDatabaseContents() {
-    // Проверим, что данные загрузились
-    List<Map<String, Object>> transactions = jdbcTemplate.queryForList(
-        "SELECT * FROM transactions LIMIT 10");
+    try {
+      // Сначала покажем все таблицы
+      List<Map<String, Object>> tables = jdbcTemplate.queryForList(
+          "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC'"
+      );
+      System.out.println("=== ВСЕ ТАБЛИЦЫ В БД ===");
+      tables.forEach(table -> System.out.println("   - " + table.get("TABLE_NAME")));
 
-    List<Map<String, Object>> products = jdbcTemplate.queryForList(
-        "SELECT * FROM products LIMIT 10");
-
-    List<Map<String, Object>> users = jdbcTemplate.queryForList(
-        "SELECT * FROM users LIMIT 10");
-
-    System.out.println("=== DEBUG DATABASE ===");
-    System.out.println("Transactions: " + transactions.size());
-    System.out.println("Products: " + products.size());
-    System.out.println("Users: " + users.size());
-
-    // Выведем примеры транзакций
-    System.out.println("=== SAMPLE TRANSACTIONS ===");
-    transactions.forEach(tx -> System.out.println("TX: " + tx));
-
-    System.out.println("=== SAMPLE PRODUCTS ===");
-    products.forEach(prod -> System.out.println("PRODUCT: " + prod));
-
-    System.out.println("=== SAMPLE USERS ===");
-    users.forEach(user -> System.out.println("USER: " + user));
+      // Проверим каждую таблицу отдельно
+      String[] tableNames = {"users", "products", "transactions", "dynamic_rules"};
+      for (String tableName : tableNames) {
+        try {
+          Integer count = jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM " + tableName, Integer.class);
+          System.out.println("✅ Таблица " + tableName + ": " + count + " записей");
+        } catch (Exception e) {
+          System.out.println("❌ Таблица " + tableName + " не существует: " + e.getMessage());
+        }
+      }
+    } catch (Exception e) {
+      System.out.println("⚠️  Критическая ошибка при отладке БД: " + e.getMessage());
+    }
   }
 
   @Test
@@ -182,23 +180,23 @@ class RecommendationServiceApplicationIntegrationTest {
   }
 
   @Test
-  void getRecommendations_WhenNonExistentUser_ShouldReturnEmptyList() {
+  void getRecommendations_WhenNonExistentUser_ShouldReturnNotFound() {
     // Arrange - пользователь, которого нет в тестовых данных
     String userId = "00000000-0000-0000-0000-000000000000";
 
     // Act
-    ResponseEntity<RecommendationResponse> response = restTemplate.exchange(
+    ResponseEntity<ErrorResponse> response = restTemplate.exchange(
         "/api/v1/recommendations/" + userId,
         HttpMethod.GET,
         null,
-        new ParameterizedTypeReference<RecommendationResponse>() {
+        new ParameterizedTypeReference<ErrorResponse>() {
         });
 
     // Assert
-    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     assertNotNull(response.getBody());
-    assertEquals(userId, response.getBody().getUserId().toString());
-    assertFalse(response.getBody().hasRecommendations());
+    assertEquals("USER_NOT_FOUND", response.getBody().getErrorCode());
+    assertTrue(response.getBody().getMessage().contains("User not found"));
   }
 
   @Test

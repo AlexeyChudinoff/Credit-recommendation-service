@@ -3,6 +3,7 @@ package com.bank.star.service;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.model.ProductType;
 import com.bank.star.repository.RecommendationRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +27,12 @@ class RecommendationServiceTest {
 
   private final UUID testUserId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
 
+  @BeforeEach
+  void setUp() {
+    // Общая настройка для всех тестов - пользователь существует
+    when(repository.userExists(eq(testUserId))).thenReturn(true);
+  }
+
   @Test
   void whenUserEligibleForInvest500_thenReturnInvest500Recommendation() {
     // Настраиваем только необходимые моки для Invest 500
@@ -38,6 +45,7 @@ class RecommendationServiceTest {
         .thenReturn(BigDecimal.ZERO);
     when(repository.getTotalSpendAmountByProductType(eq(testUserId), eq(ProductType.DEBIT)))
         .thenReturn(BigDecimal.ZERO);
+    when(repository.userHasProductType(eq(testUserId), eq(ProductType.CREDIT))).thenReturn(false);
 
     RecommendationResponse response = recommendationService.getRecommendations(testUserId);
 
@@ -137,6 +145,17 @@ class RecommendationServiceTest {
   void whenUserIdIsNull_thenThrowException() {
     assertThrows(IllegalArgumentException.class, () -> {
       recommendationService.getRecommendations(null);
+    });
+  }
+
+  @Test
+  void whenUserDoesNotExist_thenThrowUserNotFoundException() {
+    // Переопределяем настройку для конкретного теста
+    UUID nonExistentUserId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    when(repository.userExists(eq(nonExistentUserId))).thenReturn(false);
+
+    assertThrows(com.bank.star.exception.UserNotFoundException.class, () -> {
+      recommendationService.getRecommendations(nonExistentUserId);
     });
   }
 

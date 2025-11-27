@@ -3,15 +3,17 @@ DELETE FROM transactions;
 DELETE FROM products;
 DELETE FROM users;
 DELETE FROM rule_statistics;
+DELETE FROM dynamic_rules;
+DELETE FROM rule_queries;  -- Добавьте эту строку
 
--- Вставка тестовых пользователей (с правильными именами полей)
+-- Вставка тестовых пользователей
 INSERT INTO users (id, username, first_name, last_name, created_at) VALUES
 ('cd515076-5d8a-44be-930e-8d4fcb79f42d', 'invest_user', 'Иван', 'Инвесторов', CURRENT_TIMESTAMP),
 ('d4a4d619-9a0c-4fc5-b0cb-76c49409546b', 'saving_user', 'Петр', 'Сберегателев', CURRENT_TIMESTAMP),
 ('1f9b149c-6577-448a-bc94-16bea229b71a', 'credit_user', 'Сергей', 'Кредитов', CURRENT_TIMESTAMP),
 ('a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6', 'no_rec_user', 'Алексей', 'Безпродуктов', CURRENT_TIMESTAMP);
 
--- Вставка тестовых продуктов
+-- Вставка тестовых продуктов (с правильными ID для рекомендаций)
 INSERT INTO products (id, name, type, description, created_at) VALUES
 ('147f6a0f-3b91-413b-ab99-87f081d60d5a', 'Debit Card Basic', 'DEBIT', 'Базовая дебетовая карта', CURRENT_TIMESTAMP),
 ('59efc529-2fff-41af-baff-90ccd7402925', 'Premium Saving', 'SAVING', 'Премиальный сберегательный счет', CURRENT_TIMESTAMP),
@@ -37,3 +39,9 @@ INSERT INTO transactions (id, user_id, product_id, amount, type, transaction_dat
 
 -- Пользователь 4: Не подходит ни для чего
 ('txn-4-1', 'a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6', '147f6a0f-3b91-413b-ab99-87f081d60d5a', 1000.00, 'DEPOSIT', CURRENT_TIMESTAMP);
+
+-- Вставка тестовых данных для dynamic_rules (с правильными UUID)
+INSERT INTO dynamic_rules (id, product_id, product_name, product_text) VALUES
+('147f6a0f-3b91-413b-ab99-87f081d60d5a', '147f6a0f-3b91-413b-ab99-87f081d60d5a', 'Invest 500', 'Откройте свой путь к успеху с индивидуальным инвестиционным счетом...'),
+('59efc529-2fff-41af-baff-90ccd7402925', '59efc529-2fff-41af-baff-90ccd7402925', 'Top Saving', 'Откройте свою собственную «Копилку» с нашим банком!'),
+('ab138afb-f3ba-4a93-b74f-0fcee86d447f', 'ab138afb-f3ba-4a93-b74f-0fcee86d447f', 'Простой кредит', 'Откройте мир выгодных кредитов с нами!');
