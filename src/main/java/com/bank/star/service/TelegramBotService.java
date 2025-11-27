@@ -1,4 +1,4 @@
-// Telegram Bot Service с интерактивными кнопками
+// Telegram Bot Service с интерактивными кнопками и рекомендациями
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
