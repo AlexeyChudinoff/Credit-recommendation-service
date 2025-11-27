@@ -1,4 +1,4 @@
-// Telegram Bot Service с интерактивными кнопками
+// Telegram Bot Service с интерактивными кнопками и рекомендациями
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
@@ -106,6 +106,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
       logger.info("📱 Telegram message from {}: {}", chatId, text);
 
+      // 1. Проверяем известные команды и кнопки
       if (text.startsWith("/start") || text.startsWith("/help")) {
         sendHelpMessage(chatId);
       } else if (text.startsWith("/recommend")) {
@@ -115,8 +116,13 @@ public class TelegramBotService extends TelegramLongPollingBot {
       } else if (text.equals("💎 Invest 500") || text.equals("🏦 Top Saving") ||
           text.equals("💳 Простой кредит") || text.equals("❌ Без рекомендаций")) {
         handleQuickRecommend(chatId, text);
+      } else if (text.matches("[0-9a-fA-F-]{36}")) {
+        // 2. Обработка прямого ввода UUID
+        logger.info("🔍 Detected plain UUID input: {}", text);
+        processUserRecommendation(chatId, text);
       } else {
-        sendUnknownCommandMessage(chatId);
+        // 3. Если не команда и не UUID - пробуем найти по имени
+        handleUsernameOrUnknown(chatId, text);
       }
     } else if (update.hasCallbackQuery()) {
       // Обработка inline кнопок
@@ -130,12 +136,34 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
   }
 
+  private void handleUsernameOrUnknown(Long chatId, String input) {
+    try {
+      logger.info("🔍 Trying to resolve input as username: {}", input);
+
+      UUID userId = userNameResolver.resolveUserId(input);
+
+      if (userId != null) {
+        // Найден пользователь по имени - показываем рекомендации
+        logger.info("✅ User found by username '{}': {}", input, userId);
+        processUserRecommendation(chatId, input);
+      } else {
+        // Не команда, не UUID, и не username - неизвестная команда
+        logger.info("❌ Input '{}' is not a recognized command or username", input);
+        sendUnknownCommandMessage(chatId);
+      }
+
+    } catch (Exception e) {
+      logger.error("Error handling username input", e);
+      sendMessage(chatId, "❌ Произошла ошибка при поиске пользователя");
+    }
+  }
+
   private void handleRecommendCommand(Long chatId, String text) {
     try {
       String[] parts = text.split("\\s+", 2);
       if (parts.length < 2) {
         sendMessageWithKeyboard(chatId,
-            "❌ Пожалуйста, укажите ID пользователя или используйте кнопки ниже:",
+            "❌ Пожалуйста, укажите username или UUID пользователя:",
             createMainKeyboard());
         return;
       }
@@ -188,7 +216,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
       if (userId == null) {
         sendMessageWithKeyboard(chatId,
-            "❌ Пользователь не найден. Используйте кнопки ниже:",
+            "❌ Пользователь '" + userInput + "' не найден. Используйте кнопки ниже:",
             createMainKeyboard());
         return;
       }
@@ -233,10 +261,13 @@ public class TelegramBotService extends TelegramLongPollingBot {
             🤖 <b>Доступные команды:</b>
             /start - начать работу
             /help - показать эту справку
-            /recommend [user_id] - получить рекомендации для пользователя
+            /recommend [username or UUID] - получить рекомендации для пользователя
             /testusers - показать тестовых пользователей
             
-            📝 <b>Или просто используйте кнопки ниже!</b>
+            💡 <b>Просто введите:</b>
+            • Имя пользователя (например: Rolf Bogisich)
+            • UUID пользователя (например: cd515076-5d8a-44be-930e-8d4fcb79f42d)
+            • Или используйте кнопки ниже!
             """;
     sendMessageWithKeyboard(chatId, helpText, createMainKeyboard());
   }
@@ -246,10 +277,19 @@ public class TelegramBotService extends TelegramLongPollingBot {
   }
 
   void sendUnknownCommandMessage(Long chatId) {
-    String message = "❌ Неизвестная команда.\n\n" +
-        "📋 Используйте кнопки ниже или команды:\n" +
-        "/help - список команд\n" +
-        "/testusers - тестовые пользователи";
+    String message = """
+            ❌ Неизвестная команда.
+            
+            📋 <b>Доступные команды:</b>
+            /help - показать справку
+            /testusers - тестовые пользователи
+            /recommend [username or UUID] - рекомендации
+            
+            💡 <b>Или просто введите:</b>
+            • Имя пользователя (Rolf Bogisich)
+            • UUID пользователя (cd515076-5d8a-44be-930e-8d4fcb79f42d)
+            • Используйте кнопки ниже ⬇️
+            """;
     sendMessageWithKeyboard(chatId, message, createMainKeyboard());
   }
 
