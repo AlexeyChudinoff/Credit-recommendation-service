@@ -54,7 +54,7 @@ logs/
 .tmp/
 
 # =====================
-# Database (важно для вашего проекта!)
+# Database
 # =====================
 # Исключаем временные файлы H2, но не саму базу
 *.trace.db
@@ -67,3 +67,31 @@ logs/
 # Maven wrapper
 # =====================
 .mvn/wrapper/maven-wrapper.properties
+
+# =====================
+# SECURITY: Environment variables and secrets
+# Environment variables
+.env
+*.env
+.env.local
+.env.*.local
+
+# Configuration files with secrets
+config/application-local.properties
+config/application-*.properties
+
+# Secrets directories
+secrets/
+credentials/
+keys/
+
+# =====================
+# Application specific
+# =====================
+# Логи приложения (уже есть, но для ясности)
+/app-logs/
+/recommendation-logs/
+
+# Временные файлы приложения
+/temp/
+/uploads/

@@ -2,7 +2,8 @@
 package com.bank.star.controller;
 
 import com.bank.star.dto.RuleStatsResponse;
-import com.bank.star.service.InMemoryRuleStatisticsService;
+import com.bank.star.repository.RuleStatisticsRepository;
+import com.bank.star.repository.DynamicRuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +18,8 @@ import java.util.stream.Collectors;
 @Tag(name = "Rule Statistics API", description = "API для получения статистики срабатывания правил")
 public class RuleStatisticsController {
 
-  private final InMemoryRuleStatisticsService statisticsService;
-  private final com.bank.star.repository.DynamicRuleRepository dynamicRuleRepository;
+  private final RuleStatisticsRepository statisticsRepository;
+  private final DynamicRuleRepository dynamicRuleRepository;
 
   @Operation(
       summary = "Получить статистику срабатываний правил",
@@ -28,7 +29,9 @@ public class RuleStatisticsController {
   public ResponseEntity<RuleStatsResponse> getRuleStats() {
     var stats = dynamicRuleRepository.findAll().stream()
         .map(rule -> {
-          Long count = statisticsService.getRuleCount(rule.getId());
+          Long count = statisticsRepository.findByRuleId(rule.getId())
+              .map(stat -> stat.getExecutionCount())
+              .orElse(0L);
           return new RuleStatsResponse.RuleStat(rule.getId(), count);
         })
         .collect(Collectors.toList());
@@ -43,7 +46,7 @@ public class RuleStatisticsController {
   )
   @PostMapping("/stats/clear")
   public ResponseEntity<String> clearRuleStats() {
-    statisticsService.clearStatistics();
+    statisticsRepository.deleteAll();
     return ResponseEntity.ok("✅ Статистика правил очищена");
   }
 }
