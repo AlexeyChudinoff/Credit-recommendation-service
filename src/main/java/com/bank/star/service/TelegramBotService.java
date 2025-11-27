@@ -36,6 +36,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
   @Value("${telegram.bot.username}")
   private String botUsername;
 
+  @Value("${telegram.bot.enabled:false}")
+  private boolean botEnabled;
+
   // Тестовые пользователи для демонстрации
   private static final String TEST_USERS_INFO = """
       👥 <b>Тестовые пользователи для демонстрации:</b>
@@ -65,9 +68,19 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
   @PostConstruct
   public void init() {
+    if (!botEnabled) {
+      logger.warn("🚫 Telegram Bot отключен в конфигурации");
+      return;
+    }
+
+    if (botToken == null || botToken.isEmpty() || botToken.startsWith("${")) {
+      logger.error("❌ Telegram Bot Token не настроен. Проверьте переменные окружения.");
+      return;
+    }
+
     logger.info("🤖 Telegram Bot инициализирован:");
     logger.info("   Username: {}", botUsername);
-    logger.info("   Token: {}", botToken != null ? botToken.substring(0, 10) + "..." : "null");
+    logger.info("   Token: {}...", botToken.substring(0, Math.min(10, botToken.length())));
   }
 
 
@@ -78,6 +91,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
   @Override
   public String getBotToken() {
+    if (!botEnabled) {
+      throw new IllegalStateException("Telegram Bot отключен");
+    }
     return botToken;
   }
 
