@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.List;
@@ -27,70 +29,150 @@ class TelegramBotServiceTest {
   @InjectMocks
   private TelegramBotService telegramBotService;
 
-  @Captor
-  private ArgumentCaptor<SendMessage> sendMessageCaptor;
-
   @BeforeEach
-  void setup() throws TelegramApiException {
+  void setup() {
     MockitoAnnotations.openMocks(this);
-    telegramBotService = spy(new TelegramBotService(recommendationService, userNameResolver));
-    // Правильно мокируем execute - он не void, возвращаем null при вызове
-    doAnswer(invocation -> null).when(telegramBotService).execute(any(SendMessage.class));
+
+    // Устанавливаем значения полей через reflection
+    setField(telegramBotService, "botToken", "test_token");
+    setField(telegramBotService, "botUsername", "test_bot");
+
+    // Спай для мокирования всех send методов
+    telegramBotService = spy(telegramBotService);
+
+    // Мокаем все методы отправки сообщений чтобы избежать реальных вызовов Telegram API
+    doNothing().when(telegramBotService).sendMessage(anyLong(), anyString());
+    doNothing().when(telegramBotService).sendMessageWithKeyboard(anyLong(), anyString(), any(ReplyKeyboardMarkup.class));
+    doNothing().when(telegramBotService).sendMessageWithInlineKeyboard(anyLong(), anyString(), any(InlineKeyboardMarkup.class));
+    doNothing().when(telegramBotService).sendHelpMessage(anyLong());
+    doNothing().when(telegramBotService).sendTestUsersInfo(anyLong());
+    doNothing().when(telegramBotService).sendUnknownCommandMessage(anyLong());
+  }
+
+  private void setField(Object target, String fieldName, Object value) {
+    try {
+      var field = target.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(target, value);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to set field " + fieldName, e);
+    }
   }
 
   @Test
   void testGetBotUsernameAndToken() {
-    assertNotNull(telegramBotService.getBotUsername());
-    assertNotNull(telegramBotService.getBotToken());
+    assertEquals("test_bot", telegramBotService.getBotUsername());
+    assertEquals("test_token", telegramBotService.getBotToken());
   }
 
   @Test
-  void testHandleStartCommand_sendsHelpMessage() throws TelegramApiException {
+  void testHandleStartCommand() {
     Update update = createUpdateWithMessage("/start", 123L);
 
     telegramBotService.onUpdateReceived(update);
 
     verify(telegramBotService).sendHelpMessage(123L);
-    verify(telegramBotService).execute(sendMessageCaptor.capture());
-    SendMessage sent = sendMessageCaptor.getValue();
-    assertTrue(sent.getText().contains("Bank Star Recommendation Bot"));
   }
 
   @Test
-  void testHandleRecommendCommand_userNotFound() throws TelegramApiException {
+  void testHandleHelpCommand() {
+    Update update = createUpdateWithMessage("/help", 123L);
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendHelpMessage(123L);
+  }
+
+  @Test
+  void testHandleRecommendCommandWithoutArguments() {
+    Update update = createUpdateWithMessage("/recommend", 123L);
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("укажите ID пользователя")),
+        any(ReplyKeyboardMarkup.class));
+  }
+
+  @Test
+  void testHandleRecommendCommandUserNotFound() {
     Update update = createUpdateWithMessage("/recommend unknownuser", 123L);
 
     when(userNameResolver.resolveUserId("unknownuser")).thenReturn(null);
 
     telegramBotService.onUpdateReceived(update);
 
-    verify(telegramBotService).sendMessage(eq(123L), eq("❌ Пользователь не найден"));
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("Пользователь не найден")),
+        any(ReplyKeyboardMarkup.class));
   }
 
   @Test
-  void testHandleRecommendCommand_returnsRecommendations() throws TelegramApiException {
+  void testHandleRecommendCommandWithUsername() {
     Update update = createUpdateWithMessage("/recommend testuser", 123L);
 
     UUID userId = UUID.randomUUID();
-    UUID productId1 = UUID.randomUUID();
-    UUID productId2 = UUID.randomUUID();
-
     when(userNameResolver.resolveUserId("testuser")).thenReturn(userId);
     when(userNameResolver.getUserFullName(userId)).thenReturn("Test User");
     when(recommendationService.getRecommendations(userId))
         .thenReturn(new RecommendationResponse(userId, List.of(
-            new ProductRecommendation("Product1", productId1, "Description1"),
-            new ProductRecommendation("Product2", productId2, "Description2")
+            new ProductRecommendation("Product1", UUID.randomUUID(), "Description1")
         )));
 
     telegramBotService.onUpdateReceived(update);
 
-    verify(telegramBotService).sendMessage(eq(123L), argThat(msg -> msg.contains("Здравствуйте, Test User")));
-    verify(telegramBotService).sendMessage(eq(123L), argThat(msg -> msg.contains("Новыe продукты для вас")));
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("Test User")),
+        any(ReplyKeyboardMarkup.class));
   }
 
   @Test
-  void testHandleUnknownCommand_sendsUnknownCommandMessage() throws TelegramApiException {
+  void testHandleRecommendCommandWithUUID() {
+    UUID userId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
+    Update update = createUpdateWithMessage("/recommend " + userId, 123L);
+
+    when(userNameResolver.getUserFullName(userId)).thenReturn("Test User");
+    when(recommendationService.getRecommendations(userId))
+        .thenReturn(new RecommendationResponse(userId, List.of(
+            new ProductRecommendation("Product1", UUID.randomUUID(), "Description1")
+        )));
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("Test User")),
+        any(ReplyKeyboardMarkup.class));
+  }
+
+  @Test
+  void testHandleQuickRecommendInvest500() {
+    Update update = createUpdateWithMessage("💎 Invest 500", 123L);
+
+    UUID userId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
+    when(userNameResolver.getUserFullName(userId)).thenReturn("Invest User");
+    when(recommendationService.getRecommendations(userId))
+        .thenReturn(new RecommendationResponse(userId, List.of(
+            new ProductRecommendation("Invest 500", UUID.randomUUID(), "Описание Invest 500")
+        )));
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("Invest 500")),
+        any(ReplyKeyboardMarkup.class));
+  }
+
+  @Test
+  void testHandleTestUsersCommand() {
+    Update update = createUpdateWithMessage("/testusers", 123L);
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendTestUsersInfo(123L);
+  }
+
+  @Test
+  void testHandleUnknownCommand() {
     Update update = createUpdateWithMessage("/unknown", 321L);
 
     telegramBotService.onUpdateReceived(update);
@@ -99,30 +181,165 @@ class TelegramBotServiceTest {
   }
 
   @Test
-  void testSendMessage_executesSendMessageSuccessfully() throws TelegramApiException {
-    Long chatId = 555L;
-    String text = "Test message";
+  void testHandleCallbackQuery() {
+    Update update = createCallbackUpdate("recommend_cd515076-5d8a-44be-930e-8d4fcb79f42d", 123L);
 
-    telegramBotService.sendMessage(chatId, text);
+    UUID userId = UUID.fromString("cd515076-5d8a-44be-930e-8d4fcb79f42d");
+    when(userNameResolver.getUserFullName(userId)).thenReturn("Test User");
+    when(recommendationService.getRecommendations(userId))
+        .thenReturn(new RecommendationResponse(userId, List.of()));
 
-    verify(telegramBotService).execute(sendMessageCaptor.capture());
-    SendMessage sent = sendMessageCaptor.getValue();
+    telegramBotService.onUpdateReceived(update);
 
-    assertEquals(chatId.toString(), sent.getChatId());
-    assertEquals(text, sent.getText());
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        anyString(),
+        any(ReplyKeyboardMarkup.class));
   }
 
   @Test
-  void testSendMessage_handlesTelegramApiException() throws TelegramApiException {
+  void testSendMessage() throws TelegramApiException {
+    Long chatId = 555L;
+    String text = "Test message";
+
+    // Для этого теста временно убираем мок и используем реальную реализацию
+    TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
+    setField(realBotService, "botToken", "test_token");
+    setField(realBotService, "botUsername", "test_bot");
+
+    TelegramBotService spyBot = spy(realBotService);
+    Message mockMessage = mock(Message.class);
+    doReturn(mockMessage).when(spyBot).execute(any(SendMessage.class));
+
+    spyBot.sendMessage(chatId, text);
+
+    verify(spyBot).execute(argThat((SendMessage sendMessage) ->
+        sendMessage.getChatId().equals(chatId.toString()) &&
+            sendMessage.getText().equals(text)
+    ));
+  }
+
+  @Test
+  void testSendMessageWithKeyboard() throws TelegramApiException {
+    Long chatId = 555L;
+    String text = "Test message with keyboard";
+    ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+
+    // Для этого теста временно убираем мок и используем реальную реализацию
+    TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
+    setField(realBotService, "botToken", "test_token");
+    setField(realBotService, "botUsername", "test_bot");
+
+    TelegramBotService spyBot = spy(realBotService);
+    Message mockMessage = mock(Message.class);
+    doReturn(mockMessage).when(spyBot).execute(any(SendMessage.class));
+
+    spyBot.sendMessageWithKeyboard(chatId, text, keyboard);
+
+    verify(spyBot).execute(argThat((SendMessage sendMessage) ->
+        sendMessage.getChatId().equals(chatId.toString()) &&
+            sendMessage.getText().equals(text) &&
+            sendMessage.getReplyMarkup() == keyboard
+    ));
+  }
+
+  @Test
+  void testSendMessageHandlesException() throws TelegramApiException {
     Long chatId = 999L;
     String text = "Message";
 
-    doThrow(new TelegramApiException("API failure")).when(telegramBotService).execute(any(SendMessage.class));
+    // Для этого теста временно убираем мок и используем реальную реализацию
+    TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
+    setField(realBotService, "botToken", "test_token");
+    setField(realBotService, "botUsername", "test_bot");
 
-    telegramBotService.sendMessage(chatId, text);
+    TelegramBotService spyBot = spy(realBotService);
+    doThrow(new TelegramApiException("API failure")).when(spyBot).execute(any(SendMessage.class));
 
-    // Проверяем вызов execute, исключение обработано внутри sendMessage
-    verify(telegramBotService).execute(any(SendMessage.class));
+    // Должен обработать исключение без падения
+    assertDoesNotThrow(() -> spyBot.sendMessage(chatId, text));
+
+    verify(spyBot).execute(any(SendMessage.class));
+  }
+
+  @Test
+  void testFormatRecommendationsEmptyList() {
+    // Создаем реальный экземпляр бота для тестирования приватного метода
+    TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
+
+    String fullName = "Test User";
+    RecommendationResponse response = new RecommendationResponse(UUID.randomUUID(), List.of());
+
+    String result = invokePrivateFormatRecommendations(realBotService, fullName, response);
+
+    // Проверяем ключевые фразы без HTML тегов
+    assertTrue(result.contains("Здравствуйте"));
+    assertTrue(result.contains("Test User"));
+    assertTrue(result.contains("К сожалению, у нас пока нет подходящих продуктов"));
+  }
+
+  @Test
+  void testFormatRecommendationsWithProducts() {
+    // Создаем реальный экземпляр бота для тестирования приватного метода
+    TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
+
+    String fullName = "Test User";
+    UUID userId = UUID.randomUUID();
+    RecommendationResponse response = new RecommendationResponse(userId, List.of(
+        new ProductRecommendation("Product1", UUID.randomUUID(), "Description1"),
+        new ProductRecommendation("Product2", UUID.randomUUID(), "Description2")
+    ));
+
+    String result = invokePrivateFormatRecommendations(realBotService, fullName, response);
+
+    // Проверяем ключевые фразы без HTML тегов
+    assertTrue(result.contains("Здравствуйте"));
+    assertTrue(result.contains("Test User"));
+    assertTrue(result.contains("Новые продукты"));
+    assertTrue(result.contains("Product1"));
+    assertTrue(result.contains("Product2"));
+    assertTrue(result.contains("Description1"));
+    assertTrue(result.contains("Description2"));
+  }
+
+  private String invokePrivateFormatRecommendations(TelegramBotService bot, String fullName, RecommendationResponse response) {
+    try {
+      var method = TelegramBotService.class.getDeclaredMethod("formatRecommendations", String.class, RecommendationResponse.class);
+      method.setAccessible(true);
+      return (String) method.invoke(bot, fullName, response);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to invoke private method", e);
+    }
+  }
+
+  @Test
+  void testHandleInvalidCallback() {
+    Update update = createCallbackUpdate("invalid_callback_data", 123L);
+
+    telegramBotService.onUpdateReceived(update);
+
+    // Не должно быть вызовов отправки сообщений
+    verify(telegramBotService, never()).sendMessageWithKeyboard(anyLong(), anyString(), any());
+  }
+
+  @Test
+  void testHandleInvalidUUID() {
+    Update update = createUpdateWithMessage("/recommend invalid-uuid", 123L);
+
+    telegramBotService.onUpdateReceived(update);
+
+    verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
+        argThat(msg -> msg.contains("Неверный формат UUID") || msg.contains("Пользователь не найден")),
+        any(ReplyKeyboardMarkup.class));
+  }
+
+  private String invokePrivateFormatRecommendations(String fullName, RecommendationResponse response) {
+    try {
+      var method = TelegramBotService.class.getDeclaredMethod("formatRecommendations", String.class, RecommendationResponse.class);
+      method.setAccessible(true);
+      return (String) method.invoke(telegramBotService, fullName, response);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to invoke private method", e);
+    }
   }
 
   private Update createUpdateWithMessage(String text, Long chatId) {
@@ -134,6 +351,21 @@ class TelegramBotServiceTest {
     message.setChat(chat);
     message.setText(text);
     update.setMessage(message);
+
+    return update;
+  }
+
+  private Update createCallbackUpdate(String callbackData, Long chatId) {
+    Update update = new Update();
+    CallbackQuery callbackQuery = new CallbackQuery();
+    Message message = new Message();
+    Chat chat = new Chat();
+
+    chat.setId(chatId);
+    message.setChat(chat);
+    callbackQuery.setData(callbackData);
+    callbackQuery.setMessage(message);
+    update.setCallbackQuery(callbackQuery);
 
     return update;
   }

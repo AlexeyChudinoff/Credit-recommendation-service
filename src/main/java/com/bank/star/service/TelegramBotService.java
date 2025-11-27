@@ -1,4 +1,4 @@
-// Telegram Bot Service
+// Telegram Bot Service с интерактивными кнопками
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
@@ -11,10 +11,14 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,6 +35,27 @@ public class TelegramBotService extends TelegramLongPollingBot {
   @Value("${telegram.bot.username:alex_Bank_Star_bot}")
   private String botUsername;
 
+  // Тестовые пользователи для демонстрации
+  private static final String TEST_USERS_INFO = """
+      👥 <b>Тестовые пользователи для демонстрации:</b>
+      
+      💎 <b>Invest 500</b> (инвестиции)
+      👤 <code>cd515076-5d8a-44be-930e-8d4fcb79f42d</code>
+      📊 Имеет дебетовые продукты + сбережения > 1,000 ₽
+      
+      🏦 <b>Top Saving</b> (премиальные накопления)  
+      👤 <code>d4a4d619-9a0c-4fc5-b0cb-76c49409546b</code>
+      📊 Большие пополнения (≥ 50,000 ₽) + положительный баланс
+      
+      💳 <b>Простой кредит</b> (базовый кредит)
+      👤 <code>1f9b149c-6577-448a-bc94-16bea229b71a</code>
+      📊 Большие траты (> 100,000 ₽) + нет текущих кредитов
+      
+      ❌ <b>Без рекомендаций</b>
+      👤 <code>a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6</code>
+      📊 Не подходит под правила рекомендаций
+      """;
+
   public TelegramBotService(RecommendationService recommendationService,
       UserNameResolver userNameResolver) {
     this.recommendationService = recommendationService;
@@ -38,7 +63,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     logger.info("🤖 Telegram Bot инициализирован:");
     logger.info("   Username: {}", botUsername);
-    logger.info("   Token: {}", botToken);
+    logger.info("   Token: {}", botToken != null ? botToken.substring(0, 10) + "..." : "null");
   }
 
   @Override
@@ -64,8 +89,22 @@ public class TelegramBotService extends TelegramLongPollingBot {
         sendHelpMessage(chatId);
       } else if (text.startsWith("/recommend")) {
         handleRecommendCommand(chatId, text);
+      } else if (text.startsWith("/testusers")) {
+        sendTestUsersInfo(chatId);
+      } else if (text.equals("💎 Invest 500") || text.equals("🏦 Top Saving") ||
+          text.equals("💳 Простой кредит") || text.equals("❌ Без рекомендаций")) {
+        handleQuickRecommend(chatId, text);
       } else {
         sendUnknownCommandMessage(chatId);
+      }
+    } else if (update.hasCallbackQuery()) {
+      // Обработка inline кнопок
+      String callbackData = update.getCallbackQuery().getData();
+      Long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+      if (callbackData.startsWith("recommend_")) {
+        String userId = callbackData.replace("recommend_", "");
+        handleQuickRecommendById(chatId, userId);
       }
     }
   }
@@ -74,23 +113,14 @@ public class TelegramBotService extends TelegramLongPollingBot {
     try {
       String[] parts = text.split("\\s+", 2);
       if (parts.length < 2) {
-        sendMessage(chatId, "❌ Пожалуйста, укажите имя пользователя: /recommend username");
+        sendMessageWithKeyboard(chatId,
+            "❌ Пожалуйста, укажите ID пользователя или используйте кнопки ниже:",
+            createMainKeyboard());
         return;
       }
 
-      String username = parts[1].trim();
-      UUID userId = userNameResolver.resolveUserId(username);
-
-      if (userId == null) {
-        sendMessage(chatId, "❌ Пользователь не найден");
-        return;
-      }
-
-      RecommendationResponse response = recommendationService.getRecommendations(userId);
-      String fullName = userNameResolver.getUserFullName(userId);
-      String message = formatRecommendations(fullName, response);
-
-      sendMessage(chatId, message);
+      String userInput = parts[1].trim();
+      processUserRecommendation(chatId, userInput);
 
     } catch (Exception e) {
       logger.error("Error handling recommend command", e);
@@ -98,18 +128,74 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
   }
 
+  private void handleQuickRecommend(Long chatId, String buttonText) {
+    String userId = switch (buttonText) {
+      case "💎 Invest 500" -> "cd515076-5d8a-44be-930e-8d4fcb79f42d";
+      case "🏦 Top Saving" -> "d4a4d619-9a0c-4fc5-b0cb-76c49409546b";
+      case "💳 Простой кредит" -> "1f9b149c-6577-448a-bc94-16bea229b71a";
+      case "❌ Без рекомендаций" -> "a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6";
+      default -> null;
+    };
+
+    if (userId != null) {
+      processUserRecommendation(chatId, userId);
+    }
+  }
+
+  private void handleQuickRecommendById(Long chatId, String userId) {
+    processUserRecommendation(chatId, userId);
+  }
+
+  private void processUserRecommendation(Long chatId, String userInput) {
+    try {
+      UUID userId = null;
+
+      // Если введен UUID
+      if (userInput.matches("[0-9a-fA-F-]{36}")) {
+        try {
+          userId = UUID.fromString(userInput);
+        } catch (IllegalArgumentException e) {
+          sendMessageWithKeyboard(chatId,
+              "❌ Неверный формат UUID. Используйте кнопки ниже:",
+              createMainKeyboard());
+          return;
+        }
+      } else {
+        // Если введен username
+        userId = userNameResolver.resolveUserId(userInput);
+      }
+
+      if (userId == null) {
+        sendMessageWithKeyboard(chatId,
+            "❌ Пользователь не найден. Используйте кнопки ниже:",
+            createMainKeyboard());
+        return;
+      }
+
+      RecommendationResponse response = recommendationService.getRecommendations(userId);
+      String fullName = userNameResolver.getUserFullName(userId);
+      String message = formatRecommendations(fullName, response);
+
+      sendMessageWithKeyboard(chatId, message, createMainKeyboard());
+
+    } catch (Exception e) {
+      logger.error("Error processing recommendation", e);
+      sendMessage(chatId, "❌ Произошла ошибка при получении рекомендаций");
+    }
+  }
+
   private String formatRecommendations(String fullName, RecommendationResponse response) {
     StringBuilder sb = new StringBuilder();
-    sb.append("👋 Здравствуйте, ").append(fullName).append("!\n\n");
+    sb.append("👋 Здравствуйте, <b>").append(fullName).append("</b>!\n\n");
 
     if (response.getRecommendations().isEmpty()) {
       sb.append("📭 К сожалению, у нас пока нет подходящих продуктов для вас.\n");
       sb.append("Продолжайте пользоваться нашими услугами, и мы обязательно предложим вам что-то интересное!");
     } else {
-      sb.append("🎯 Новые продукты для вас:\n\n");
+      sb.append("🎯 <b>Новые продукты для вас:</b>\n\n");
 
       for (ProductRecommendation product : response.getRecommendations()) {
-        sb.append("💎 ").append(product.getName()).append("\n");
+        sb.append("💎 <b>").append(product.getName()).append("</b>\n");
         sb.append("📝 ").append(product.getText()).append("\n\n");
       }
 
@@ -121,33 +207,133 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
   void sendHelpMessage(Long chatId) {
     String helpText = """
-            🏦 Bank Star Recommendation Bot
+            🏦 <b>Bank Star Recommendation Bot</b>
             
-            Доступные команды:
+            🤖 <b>Доступные команды:</b>
             /start - начать работу
             /help - показать эту справку
-            /recommend [username] - получить рекомендации для пользователя
+            /recommend [user_id] - получить рекомендации для пользователя
+            /testusers - показать тестовых пользователей
             
-            Пример:
-            /recommend ivanov
+            📝 <b>Или просто используйте кнопки ниже!</b>
             """;
-    sendMessage(chatId, helpText);
+    sendMessageWithKeyboard(chatId, helpText, createMainKeyboard());
+  }
+
+  void sendTestUsersInfo(Long chatId) {
+    sendMessageWithInlineKeyboard(chatId, TEST_USERS_INFO, createTestUsersInlineKeyboard());
   }
 
   void sendUnknownCommandMessage(Long chatId) {
-    sendMessage(chatId, "❌ Неизвестная команда. Используйте /help для списка команд.");
+    String message = "❌ Неизвестная команда.\n\n" +
+        "📋 Используйте кнопки ниже или команды:\n" +
+        "/help - список команд\n" +
+        "/testusers - тестовые пользователи";
+    sendMessageWithKeyboard(chatId, message, createMainKeyboard());
+  }
+
+  // Создание основной клавиатуры с кнопками
+  private ReplyKeyboardMarkup createMainKeyboard() {
+    ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+    keyboardMarkup.setSelective(true);
+    keyboardMarkup.setResizeKeyboard(true);
+    keyboardMarkup.setOneTimeKeyboard(false);
+
+    List<KeyboardRow> keyboard = new ArrayList<>();
+
+    // Первый ряд кнопок
+    KeyboardRow row1 = new KeyboardRow();
+    row1.add("💎 Invest 500");
+    row1.add("🏦 Top Saving");
+
+    // Второй ряд кнопок
+    KeyboardRow row2 = new KeyboardRow();
+    row2.add("💳 Простой кредит");
+    row2.add("❌ Без рекомендаций");
+
+    // Третий ряд кнопок
+    KeyboardRow row3 = new KeyboardRow();
+    row3.add("/testusers");
+    row3.add("/help");
+
+    keyboard.add(row1);
+    keyboard.add(row2);
+    keyboard.add(row3);
+
+    keyboardMarkup.setKeyboard(keyboard);
+    return keyboardMarkup;
+  }
+
+  // Создание inline клавиатуры для тестовых пользователей
+  private InlineKeyboardMarkup createTestUsersInlineKeyboard() {
+    InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+    List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+    // Первый ряд
+    List<InlineKeyboardButton> row1 = new ArrayList<>();
+    row1.add(createInlineButton("💎 Invest 500", "recommend_cd515076-5d8a-44be-930e-8d4fcb79f42d"));
+    row1.add(createInlineButton("🏦 Top Saving", "recommend_d4a4d619-9a0c-4fc5-b0cb-76c49409546b"));
+
+    // Второй ряд
+    List<InlineKeyboardButton> row2 = new ArrayList<>();
+    row2.add(createInlineButton("💳 Простой кредит", "recommend_1f9b149c-6577-448a-bc94-16bea229b71a"));
+    row2.add(createInlineButton("❌ Без рекомендаций", "recommend_a1b2c3d4-5e6f-4890-9a0b-c1d2e3f4a5b6"));
+
+    rows.add(row1);
+    rows.add(row2);
+
+    inlineKeyboard.setKeyboard(rows);
+    return inlineKeyboard;
+  }
+
+  private InlineKeyboardButton createInlineButton(String text, String callbackData) {
+    InlineKeyboardButton button = new InlineKeyboardButton();
+    button.setText(text);
+    button.setCallbackData(callbackData);
+    return button;
   }
 
   void sendMessage(Long chatId, String text) {
     SendMessage message = new SendMessage();
     message.setChatId(chatId.toString());
     message.setText(text);
+    message.enableHtml(true);
 
     try {
       execute(message);
       logger.info("✅ Telegram message sent to {}", chatId);
     } catch (TelegramApiException e) {
       logger.error("❌ Failed to send Telegram message", e);
+    }
+  }
+
+  void sendMessageWithKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard) {
+    SendMessage message = new SendMessage();
+    message.setChatId(chatId.toString());
+    message.setText(text);
+    message.enableHtml(true);
+    message.setReplyMarkup(keyboard);
+
+    try {
+      execute(message);
+      logger.info("✅ Telegram message with keyboard sent to {}", chatId);
+    } catch (TelegramApiException e) {
+      logger.error("❌ Failed to send Telegram message with keyboard", e);
+    }
+  }
+
+  void sendMessageWithInlineKeyboard(Long chatId, String text, InlineKeyboardMarkup keyboard) {
+    SendMessage message = new SendMessage();
+    message.setChatId(chatId.toString());
+    message.setText(text);
+    message.enableHtml(true);
+    message.setReplyMarkup(keyboard);
+
+    try {
+      execute(message);
+      logger.info("✅ Telegram message with inline keyboard sent to {}", chatId);
+    } catch (TelegramApiException e) {
+      logger.error("❌ Failed to send Telegram message with inline keyboard", e);
     }
   }
 }

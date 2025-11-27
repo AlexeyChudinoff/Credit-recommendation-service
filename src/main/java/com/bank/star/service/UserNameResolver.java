@@ -27,7 +27,8 @@ public class UserNameResolver {
 
   public String getUserFullName(UUID userId) {
     try {
-      String sql = "SELECT full_name FROM users WHERE id = ?";
+      // Если в базе first_name и last_name раздельно
+      String sql = "SELECT first_name || ' ' || last_name as full_name FROM users WHERE id = ?";
       return jdbcTemplate.queryForObject(sql, String.class, userId.toString());
     } catch (Exception e) {
       return "Уважаемый клиент";

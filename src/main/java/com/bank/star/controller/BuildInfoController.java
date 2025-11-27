@@ -5,30 +5,39 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class BuildInfoController {
 
-  private final BuildProperties buildProperties;
+  private final Optional<BuildProperties> buildProperties;
 
-  public BuildInfoController(BuildProperties buildProperties) {
+  // Изменяем конструктор для работы с Optional
+  public BuildInfoController(Optional<BuildProperties> buildProperties) {
     this.buildProperties = buildProperties;
   }
 
   @GetMapping("/build-info")
   public Map<String, String> getBuildInfo() {
-    return Map.of(
-        "name", buildProperties.getName(),
-        "version", buildProperties.getVersion(),
-        "time", buildProperties.getTime().toString(),
-        "artifact", buildProperties.getArtifact(),
-        "group", buildProperties.getGroup()
-    );
+    return buildProperties.map(props -> Map.of(
+        "name", props.getName(),
+        "version", props.getVersion(),
+        "time", props.getTime().toString(),
+        "artifact", props.getArtifact(),
+        "group", props.getGroup()
+    )).orElse(Map.of(
+        "name", "recommendation-service",
+        "version", "unknown",
+        "time", "unknown",
+        "artifact", "unknown",
+        "group", "unknown"
+    ));
   }
 
   @GetMapping("/version")
   public String getVersion() {
-    return String.format("🏦 Bank Star Recommendation Service v%s",
-        buildProperties.getVersion());
+    String version = buildProperties.map(BuildProperties::getVersion)
+        .orElse("unknown");
+    return String.format("🏦 Bank Star Recommendation Service v%s", version);
   }
 }
