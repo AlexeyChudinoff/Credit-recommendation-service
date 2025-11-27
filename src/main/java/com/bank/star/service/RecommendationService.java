@@ -1,12 +1,13 @@
 //основной сервис рекомендаций
-//основной сервис рекомендаций
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
 import com.bank.star.dto.RecommendationResponse;
 import com.bank.star.exception.UserNotFoundException;
 import com.bank.star.model.ProductType;
+import com.bank.star.model.RuleStatistics;
 import com.bank.star.repository.DynamicRuleRepository;
+import com.bank.star.repository.RuleStatisticsRepository;
 import com.bank.star.service.rules.ProductRuleSets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public class RecommendationService {
   private final ProductRuleSets productRuleSets;
   private final com.bank.star.repository.RecommendationRepository repository;
   private final DynamicRuleRepository dynamicRuleRepository;
-  private final InMemoryRuleStatisticsService statisticsService;
+  private final RuleStatisticsRepository statisticsRepository;
 
   // Предопределенные продукты для рекомендаций
   private final Map<String, ProductRecommendation> products = Map.of(
@@ -49,11 +50,11 @@ public class RecommendationService {
   public RecommendationService(ProductRuleSets productRuleSets,
       com.bank.star.repository.RecommendationRepository repository,
       DynamicRuleRepository dynamicRuleRepository,
-      InMemoryRuleStatisticsService statisticsService) {
+      RuleStatisticsRepository statisticsRepository) {  // ИЗМЕНИЛИ ЗДЕСЬ
     this.productRuleSets = productRuleSets;
     this.repository = repository;
     this.dynamicRuleRepository = dynamicRuleRepository;
-    this.statisticsService = statisticsService;
+    this.statisticsRepository = statisticsRepository;   // И ЗДЕСЬ
   }
 
   public RecommendationResponse getRecommendations(UUID userId) {
@@ -119,19 +120,24 @@ public class RecommendationService {
 
   private void updateRuleStatistics(List<ProductRecommendation> recommendations) {
     for (ProductRecommendation recommendation : recommendations) {
-      // Находим правило по productId и обновляем статистику в памяти
       dynamicRuleRepository.findByProductId(recommendation.getId())
           .ifPresent(rule -> {
-            statisticsService.incrementRuleCount(rule.getId());
+            // Используем репозиторий вместо in-memory сервиса
+            RuleStatistics statistics = statisticsRepository.findByRuleId(rule.getId())
+                .orElseGet(() -> new RuleStatistics(rule.getId()));
+
+            statistics.incrementCount();
+            statisticsRepository.save(statistics);
+
             logger.debug("Updated statistics for rule {}: {}", rule.getId(),
-                statisticsService.getRuleCount(rule.getId()));
+                statistics.getExecutionCount());
           });
     }
   }
 
   // Метод для сброса кеша
   public void clearCaches() {
-    statisticsService.clearStatistics();
-    logger.info("🧹 All caches cleared");
+    statisticsRepository.deleteAll();
+    logger.info("🧹 Statistics cleared from database");
   }
 }
