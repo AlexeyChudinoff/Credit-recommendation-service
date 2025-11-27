@@ -5,6 +5,7 @@ import com.bank.star.dto.RecommendationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -33,9 +34,10 @@ class TelegramBotServiceTest {
   void setup() {
     MockitoAnnotations.openMocks(this);
 
-    // Устанавливаем значения полей через reflection
-    setField(telegramBotService, "botToken", "test_token");
-    setField(telegramBotService, "botUsername", "test_bot");
+    // Устанавливаем значения полей через ReflectionTestUtils
+    ReflectionTestUtils.setField(telegramBotService, "botToken", "test_token");
+    ReflectionTestUtils.setField(telegramBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(telegramBotService, "botEnabled", true);
 
     // Спай для мокирования всех send методов
     telegramBotService = spy(telegramBotService);
@@ -49,20 +51,21 @@ class TelegramBotServiceTest {
     doNothing().when(telegramBotService).sendUnknownCommandMessage(anyLong());
   }
 
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      var field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to set field " + fieldName, e);
-    }
+  @Test
+  void testGetBotUsername() {
+    assertEquals("test_bot", telegramBotService.getBotUsername());
   }
 
   @Test
-  void testGetBotUsernameAndToken() {
-    assertEquals("test_bot", telegramBotService.getBotUsername());
+  void testGetBotTokenWhenEnabled() {
+    ReflectionTestUtils.setField(telegramBotService, "botEnabled", true);
     assertEquals("test_token", telegramBotService.getBotToken());
+  }
+
+  @Test
+  void testGetBotTokenWhenDisabled() {
+    ReflectionTestUtils.setField(telegramBotService, "botEnabled", false);
+    assertThrows(IllegalStateException.class, () -> telegramBotService.getBotToken());
   }
 
   @Test
@@ -203,8 +206,9 @@ class TelegramBotServiceTest {
 
     // Для этого теста временно убираем мок и используем реальную реализацию
     TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
-    setField(realBotService, "botToken", "test_token");
-    setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botToken", "test_token");
+    ReflectionTestUtils.setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botEnabled", true);
 
     TelegramBotService spyBot = spy(realBotService);
     Message mockMessage = mock(Message.class);
@@ -226,8 +230,9 @@ class TelegramBotServiceTest {
 
     // Для этого теста временно убираем мок и используем реальную реализацию
     TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
-    setField(realBotService, "botToken", "test_token");
-    setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botToken", "test_token");
+    ReflectionTestUtils.setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botEnabled", true);
 
     TelegramBotService spyBot = spy(realBotService);
     Message mockMessage = mock(Message.class);
@@ -249,8 +254,9 @@ class TelegramBotServiceTest {
 
     // Для этого теста временно убираем мок и используем реальную реализацию
     TelegramBotService realBotService = new TelegramBotService(recommendationService, userNameResolver);
-    setField(realBotService, "botToken", "test_token");
-    setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botToken", "test_token");
+    ReflectionTestUtils.setField(realBotService, "botUsername", "test_bot");
+    ReflectionTestUtils.setField(realBotService, "botEnabled", true);
 
     TelegramBotService spyBot = spy(realBotService);
     doThrow(new TelegramApiException("API failure")).when(spyBot).execute(any(SendMessage.class));
@@ -330,16 +336,6 @@ class TelegramBotServiceTest {
     verify(telegramBotService).sendMessageWithKeyboard(eq(123L),
         argThat(msg -> msg.contains("Неверный формат UUID") || msg.contains("Пользователь не найден")),
         any(ReplyKeyboardMarkup.class));
-  }
-
-  private String invokePrivateFormatRecommendations(String fullName, RecommendationResponse response) {
-    try {
-      var method = TelegramBotService.class.getDeclaredMethod("formatRecommendations", String.class, RecommendationResponse.class);
-      method.setAccessible(true);
-      return (String) method.invoke(telegramBotService, fullName, response);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to invoke private method", e);
-    }
   }
 
   private Update createUpdateWithMessage(String text, Long chatId) {
