@@ -3,6 +3,7 @@ package com.bank.star.repository;
 
 import com.bank.star.model.ProductType;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,4 +179,32 @@ public class RecommendationRepository {
       }
     }
   }
+
+  // RecommendationRepository.java - ДОБАВЛЯЕМ ЭТОТ МЕТОД
+  /**
+   * Получает список ID всех активных пользователей
+   * Активным считается пользователь, у которого есть хотя бы одна транзакция
+   */
+  public List<UUID> getAllActiveUserIds() {
+    logger.debug("Getting all active user IDs");
+
+    String sql = """
+        SELECT DISTINCT u.id 
+        FROM users u 
+        JOIN transactions t ON u.id = t.user_id 
+        WHERE t.amount > 0
+        ORDER BY u.id
+        """;
+
+    try {
+      List<String> userIdStrings = jdbcTemplate.queryForList(sql, String.class);
+      return userIdStrings.stream()
+          .map(UUID::fromString)
+          .toList();
+    } catch (Exception e) {
+      logger.error("Error getting active user IDs: {}", e.getMessage());
+      return List.of();
+    }
+  }
+
 }
