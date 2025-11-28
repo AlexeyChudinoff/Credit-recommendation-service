@@ -79,6 +79,7 @@ logs/
 # Configuration files with secrets
 config/application-local.properties
 config/application-*.properties
+src/main/resources/application-dev.properties
 
 # Secrets directories
 secrets/
