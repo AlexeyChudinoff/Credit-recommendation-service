@@ -1,5 +1,3 @@
-Ниже пример README.md, который хорошо ляжет на твой проект и уже согласован с вики.
-
 ```markdown
 # Credit Recommendation Service
 
@@ -96,16 +94,3 @@ Compose‑файл поднимает приложение, PostgreSQL и Redis,
 - Улучшение моделей ML и их конфигурируемости.
 - Добавление новых каналов интеграции (например, мобильное приложение/веб‑UI).
 ```
-
-Если нужно, можно отдельно дописать блоки «Contributing» и «License» под требования курса/команды.
-
-[1](https://risk-practitioner.com/_sources/README.md)
-[2](https://doyenphi.pro/wp-content/uploads/2024/05/Python-Project-Creditworthiness-Assessment-System.pdf)
-[3](https://github.com/Stuksus/Data-preparation-for-credit-scoring)
-[4](https://devpost.com/software/credit-card-recommendation-system)
-[5](https://www.aibase.com/repos/project/credit-score-mlops)
-[6](https://github.com/7nolikov/recommendation-service)
-[7](https://www.aibase.com/repos/project/credit-scoring)
-[8](https://github.com/svbailey/recommendation-engine-example)
-[9](https://abdollahrida.github.io/portfolio/portfolio-3/)
-[10](https://github.com/skgill117/spring-boot-microservices)
