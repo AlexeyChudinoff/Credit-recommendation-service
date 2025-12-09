@@ -48,7 +48,6 @@ public class RecommendationRepository {
 
   /**
    * Возвращает сумму пополнений по указанному типу продукта
-   * ИСПРАВЛЕНИЕ: используем t.type (CHARACTER VARYING)
    */
   public BigDecimal getTotalDepositAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total deposits for user {} and product type {}", userId, type);
@@ -72,17 +71,16 @@ public class RecommendationRepository {
 
   /**
    * Возвращает сумму трат по указанному типу продукта
-   * ИСПРАВЛЕНИЕ: используем t.type = 'WITHDRAW' (реальное название в базе)
    */
   public BigDecimal getTotalSpendAmountByProductType(UUID userId, ProductType type) {
     logger.debug("Getting total spends for user {} and product type {}", userId, type);
 
     String sql = """
-      SELECT COALESCE(SUM(t.amount), 0) 
-      FROM transactions t 
-      JOIN products p ON t.product_id = p.id 
-      WHERE t.user_id = ? AND p.type = ? AND t.type = 'WITHDRAW'
-      """;
+        SELECT COALESCE(SUM(t.amount), 0) 
+        FROM transactions t 
+        JOIN products p ON t.product_id = p.id 
+        WHERE t.user_id = ? AND p.type = ? AND t.type = 'WITHDRAW'
+        """;
 
     try {
       BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
@@ -161,7 +159,6 @@ public class RecommendationRepository {
 
   /**
    * Диагностика: проверяет суммы по разным типам транзакций
-   * ИСПРАВЛЕНИЕ: используем только реальные типы из базы - DEPOSIT и WITHDRAW
    */
   public void diagnoseTransactionTypes(UUID userId) {
     logger.info("🔍 TRANSACTION TYPE DIAGNOSTICS for user {}:", userId);
@@ -172,7 +169,8 @@ public class RecommendationRepository {
     for (String type : types) {
       String sql = "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = ?";
       try {
-        BigDecimal total = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(), type);
+        BigDecimal total = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId.toString(),
+            type);
         logger.info("🔍 {} transactions total: {}", type, total);
       } catch (Exception e) {
         logger.error("Error getting {} total: {}", type, e.getMessage());
@@ -180,10 +178,9 @@ public class RecommendationRepository {
     }
   }
 
-  // RecommendationRepository.java - ДОБАВЛЯЕМ ЭТОТ МЕТОД
   /**
-   * Получает список ID всех активных пользователей
-   * Активным считается пользователь, у которого есть хотя бы одна транзакция
+   * Получает список ID всех активных пользователей Активным считается пользователь, у которого есть
+   * хотя бы одна транзакция
    */
   public List<UUID> getAllActiveUserIds() {
     logger.debug("Getting all active user IDs");

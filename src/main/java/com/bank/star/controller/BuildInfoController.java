@@ -3,7 +3,9 @@ package com.bank.star.controller;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 import java.util.Optional;
 
@@ -12,7 +14,7 @@ public class BuildInfoController {
 
   private final Optional<BuildProperties> buildProperties;
 
-  // Изменяем конструктор для работы с Optional
+  //конструктор для работы с Optional
   public BuildInfoController(Optional<BuildProperties> buildProperties) {
     this.buildProperties = buildProperties;
   }
