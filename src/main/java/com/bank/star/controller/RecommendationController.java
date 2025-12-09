@@ -3,6 +3,7 @@ package com.bank.star.controller;
 
 import com.bank.star.dto.ErrorResponse;
 import com.bank.star.dto.RecommendationResponse;
+import com.bank.star.exception.UserNotFoundException;
 import com.bank.star.service.RecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,19 +12,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/recommendations")
@@ -43,35 +42,38 @@ public class RecommendationController {
   }
 
   @Operation(
-      summary = "Получить рекомендации для пользователя",
+      summary = "Получить рекомендации для пользователя (Path Variable)",
       description = """
-          ## 📊 Получение персонализированных рекомендаций
-          
-          Этот endpoint анализирует финансовое поведение пользователя и возвращает список 
-          банковских продуктов, которые наиболее подходят клиенту на основе его транзакционной активности.
-          
-          ### 🎯 Бизнес-правила рекомендаций:
-          
-          **💰 Invest 500** (Инвестиционный счет):
-          - ✅ Пользователь имеет дебетовые продукты
-          - ✅ Нет текущих инвестиционных продуктов  
-          - ✅ Сумма пополнений сберегательных счетов > 1,000 ₽
-          
-          **🏦 Top Saving** (Премиум накопительный счет):
-          - ✅ Пользователь имеет дебетовые продукты
-          - ✅ Сумма пополнений по дебетовым ИЛИ сберегательным счетам ≥ 50,000 ₽
-          - ✅ Положительный баланс по дебетовым счетам
-          
-          **💳 Простой кредит** (Базовый кредитный продукт):
-          - ✅ Нет текущих кредитных продуктов
-          - ✅ Положительный баланс по дебетовым счетам
-          - ✅ Сумма расходов по дебетовым счетам > 100,000 ₽
-          
-          ### 👥 Тестовые пользователи:
-          - `cd515076-5d8a-44be-930e-8d4fcb79f42d` - подходит для **Invest 500**
-          - `d4a4d619-9a0c-4fc5-b0cb-76c49409546b` - подходит для **Top Saving**  
-          - `1f9b149c-6577-448a-bc94-16bea229b71a` - подходит для **Простой кредит**
-          """
+                    ## 📊 Получение персонализированных рекомендаций
+                    
+                    Этот endpoint анализирует финансовое поведение пользователя и возвращает список 
+                    банковских продуктов, которые наиболее подходят клиенту на основе его транзакционной активности.
+                    
+                    ### 🎯 Бизнес-правила рекомендаций:
+                    
+                    **💰 Invest 500** (Инвестиционный счет):
+                    - ✅ Пользователь имеет дебетовые продукты
+                    - ✅ Нет текущих инвестиционных продуктов  
+                    - ✅ Сумма пополнений сберегательных счетов > 1,000 ₽
+                    
+                    **🏦 Top Saving** (Премиум накопительный счет):
+                    - ✅ Пользователь имеет дебетовые продукты
+                    - ✅ Сумма пополнений по дебетовым ИЛИ сберегательным счетам ≥ 50,000 ₽
+                    - ✅ Положительный баланс по дебетовым счетам
+                    
+                    **💳 Простой кредит** (Базовый кредитный продукт):
+                    - ✅ Нет текущих кредитных продуктов
+                    - ✅ Положительный баланс по дебетовым счетам
+                    - ✅ Сумма расходов по дебетовым счетам > 100,000 ₽
+                    
+                    ### 👥 Тестовые пользователи:
+                    - `cd515076-5d8a-44be-930e-8d4fcb79f42d` - подходит для **Invest 500**
+                    - `d4a4d619-9a0c-4fc5-b0cb-76c49409546b` - подходит для **Top Saving**  
+                    - `1f9b149c-6577-448a-bc94-16bea229b71a` - подходит для **Простой кредит**
+                    
+                    ### 📝 Формат запроса:
+                    Используйте UUID в пути URL
+                    """
   )
   @ApiResponses(value = {
       @ApiResponse(
@@ -96,7 +98,7 @@ public class RecommendationController {
       )
   })
   @GetMapping("/{userId}")
-  public ResponseEntity<RecommendationResponse> getRecommendations(
+  public ResponseEntity<RecommendationResponse> getRecommendationsByPath(
       @Parameter(
           description = "Уникальный идентификатор пользователя (UUID)",
           example = "cd515076-5d8a-44be-930e-8d4fcb79f42d",
@@ -104,15 +106,89 @@ public class RecommendationController {
       )
       @PathVariable String userId) {
 
-    logger.info("🔄 Получен запрос на рекомендации для пользователя: {}", userId);
+    logger.info("🔄 Получен запрос (PATH VARIABLE) на рекомендации для пользователя: {}", userId);
+    return processRecommendationRequest(userId);
+  }
 
-    // Валидация будет обработана глобальным обработчиком исключений
-    UUID userUuid = UUID.fromString(userId);
-    RecommendationResponse response = recommendationService.getRecommendations(userUuid);
+  @Operation(
+      summary = "Получить рекомендации для пользователя (Query Parameter)",
+      description = """
+                    ## 📊 Получение персонализированных рекомендаций через Query Parameter
+                    
+                    Альтернативный вариант запроса через параметр URL.
+                    
+                    ### 👥 Тестовые пользователи:
+                    - `cd515076-5d8a-44be-930e-8d4fcb79f42d` - подходит для **Invest 500**
+                    - `d4a4d619-9a0c-4fc5-b0cb-76c49409546b` - подходит для **Top Saving**  
+                    - `1f9b149c-6577-448a-bc94-16bea229b71a` - подходит для **Простой кредит**
+                    
+                    ### 📝 Формат запроса:
+                    Используйте параметр `userId` в query string
+                    """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(
+          responseCode = "200",
+          description = "✅ Успешный запрос. Возвращает список рекомендаций",
+          content = @Content(schema = @Schema(implementation = RecommendationResponse.class))
+      ),
+      @ApiResponse(
+          responseCode = "400",
+          description = "❌ Неверный формат UUID пользователя",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+      ),
+      @ApiResponse(
+          responseCode = "404",
+          description = "❌ Пользователь не найден в системе",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+      ),
+      @ApiResponse(
+          responseCode = "500",
+          description = "🚨 Внутренняя ошибка сервера",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+      )
+  })
+  @GetMapping
+  public ResponseEntity<RecommendationResponse> getRecommendationsByQuery(
+      @Parameter(
+          description = "Уникальный идентификатор пользователя (UUID)",
+          example = "cd515076-5d8a-44be-930e-8d4fcb79f42d",
+          required = true
+      )
+      @RequestParam String userId) {
 
-    logger.info("✅ Успешно обработан запрос для пользователя: {}. Найдено рекомендаций: {}",
-        userId, response.getRecommendations().size());
-    return ResponseEntity.ok(response);
+    logger.info("🔄 Получен запрос (QUERY PARAMETER) на рекомендации для пользователя: {}", userId);
+    return processRecommendationRequest(userId);
+  }
+
+  /**
+   * Общий метод обработки запроса рекомендаций
+   * @param userId строковый идентификатор пользователя
+   * @return ResponseEntity с рекомендациями
+   */
+  private ResponseEntity<RecommendationResponse> processRecommendationRequest(String userId) {
+    try {
+      // 1. Валидация UUID (IllegalArgumentException будет пойман ValidationExceptionHandler)
+      UUID userUuid = UUID.fromString(userId);
+
+      // 2. Получение рекомендаций (UserNotFoundException будет пойман GlobalExceptionHandler)
+      RecommendationResponse response = recommendationService.getRecommendations(userUuid);
+
+      logger.info("✅ Успешно обработан запрос для пользователя: {}. Найдено рекомендаций: {}",
+          userId, response.getRecommendations().size());
+
+      return ResponseEntity.ok(response);
+
+    } catch (IllegalArgumentException e) {
+      // Пробрасываем исключение - его поймает ValidationExceptionHandler (@Order 1)
+      logger.warn("❌ Неверный формат UUID: {}", userId);
+      throw e;
+    } catch (UserNotFoundException e) {
+      // Пробрасываем исключение - его поймает GlobalExceptionHandler (@Order 2)
+      logger.warn("❌ Пользователь не найден: {}", userId);
+      throw e;
+    }
+    // Все остальные исключения пробрасываются как есть
   }
 
   @Operation(
@@ -195,11 +271,11 @@ public class RecommendationController {
   public ResponseEntity<String> health() {
     logger.debug("🔍 Проверка здоровья сервиса");
     return ResponseEntity.ok("""
-        🏦 Bank Star Recommendation Service
-        Status: ✅ OPERATIONAL
-        Version: 1.0.0
-        Timestamp: %s
-        """.formatted(LocalDateTime.now()));
+                🏦 Bank Star Recommendation Service
+                Status: ✅ OPERATIONAL
+                Version: 1.0.0
+                Timestamp: %s
+                """.formatted(LocalDateTime.now()));
   }
 
   @Operation(
@@ -213,22 +289,22 @@ public class RecommendationController {
   @GetMapping("/info")
   public ResponseEntity<String> info() {
     return ResponseEntity.ok("""
-        🏦 Bank Star Recommendation Service v1.0.0
-        
-        📊 Основные возможности:
-        • Персонализированные рекомендации банковских продуктов
-        • Анализ транзакционного поведения в реальном времени
-        • Интеграция с мобильным приложением и личным кабинетом
-        • Поддержка 3 алгоритмов рекомендаций
-        
-        🔧 Технологический стек:
-        • Java 17, Spring Boot 3.2
-        • H2 Database (read-only)
-        • Spring JDBC Template
-        • Swagger/OpenAPI 3.0
-        
-        👥 Для тестирования используйте тестовые UUID пользователей
-        """);
+                🏦 Bank Star Recommendation Service v1.0.0
+                
+                📊 Основные возможности:
+                • Персонализированные рекомендации банковских продуктов
+                • Анализ транзакционного поведения в реальном времени
+                • Интеграция с мобильным приложением и личным кабинетом
+                • Поддержка 3 алгоритмов рекомендаций
+                
+                🔧 Технологический стек:
+                • Java 17, Spring Boot 3.2
+                • H2 Database (read-only)
+                • Spring JDBC Template
+                • Swagger/OpenAPI 3.0
+                
+                👥 Для тестирования используйте тестовые UUID пользователей
+                """);
   }
 
   @Operation(
@@ -242,19 +318,17 @@ public class RecommendationController {
   @GetMapping("/stats")
   public ResponseEntity<String> stats() {
     return ResponseEntity.ok("""
-        📈 Статистика сервиса рекомендаций:
-        
-        • Алгоритмы рекомендаций: 3
-        • Поддерживаемые продукты: Invest 500, Top Saving, Простой кредит
-        • Максимальное время ответа: < 100ms
-        • Формат данных: JSON
-        • Кэширование: Включено
-        
-        🎯 Бизнес-логика:
-        Основана на анализе финансового поведения пользователей
-        и строгом соответствии бизнес-правилам банка.
-        """);
+                📈 Статистика сервиса рекомендаций:
+                
+                • Алгоритмы рекомендаций: 3
+                • Поддерживаемые продукты: Invest 500, Top Saving, Простой кредит
+                • Максимальное время ответа: < 100ms
+                • Формат данных: JSON
+                • Кэширование: Включено
+                
+                🎯 Бизнес-логика:
+                Основана на анализе финансового поведения пользователей
+                и строгом соответствии бизнес-правилам банка.
+                """);
   }
-
-  // ⚠️ ВСЕ ОБРАБОТЧИКИ ИСКЛЮЧЕНИЙ УДАЛЕНЫ - они теперь в GlobalExceptionHandler
 }
