@@ -36,8 +36,8 @@ cd Credit-recommendation-service
 
 ```
 ./mvnw clean package -DskipTests
-# или на Windows:
-# mvnw.cmd clean package -DskipTests
+ или на Windows:
+ mvnw.cmd clean package -DskipTests
 ```
 
 Перед запуском нужно поднять PostgreSQL и Redis и задать переменные окружения:[web:1]
