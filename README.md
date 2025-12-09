@@ -65,7 +65,7 @@ java -jar target/*.jar
 Проверка:
 
 ```
-curl "http://localhost:8080/api/v1/recommendations?userId=test123"
+curl "[http://localhost:8080/api/v1/recommendations?userId=test123](http://localhost:8080/api/v1/recommendations/cd515076-5d8a-44be-930e-8d4fcb79f42d)"
 ```
 
 ## Запуск через Docker Compose
