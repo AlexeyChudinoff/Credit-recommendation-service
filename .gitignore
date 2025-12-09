@@ -95,4 +95,4 @@ keys/
 
 # Временные файлы приложения
 /temp/
-/uploads/
+/uploads/src/main/resources/docs/
