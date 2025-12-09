@@ -1,4 +1,7 @@
-//основной сервис рекомендаций
+/**
+ * Основной сервис рекомендаций, который проверяет соответствие пользователя
+ * различным наборам правил и формирует список рекомендуемых продуктов.
+ */
 package com.bank.star.service;
 
 import com.bank.star.dto.ProductRecommendation;
@@ -22,12 +25,12 @@ public class RecommendationService {
 
   private static final Logger logger = LoggerFactory.getLogger(RecommendationService.class);
 
-  private final ProductRuleSets productRuleSets;
-  private final com.bank.star.repository.RecommendationRepository repository;
-  private final DynamicRuleRepository dynamicRuleRepository;
-  private final RuleStatisticsRepository statisticsRepository;
+  private final ProductRuleSets productRuleSets;              // Наборы правил для продуктов
+  private final com.bank.star.repository.RecommendationRepository repository;  // Репозиторий данных пользователя
+  private final DynamicRuleRepository dynamicRuleRepository;  // Репозиторий динамических правил
+  private final RuleStatisticsRepository statisticsRepository; // Репозиторий статистики выполнения правил
 
-  // Предопределенные продукты для рекомендаций
+  // Предопределенные продукты для рекомендаций с их описанием и ID
   private final Map<String, ProductRecommendation> products = Map.of(
       "Invest 500", new ProductRecommendation(
           "Invest 500",
@@ -46,17 +49,33 @@ public class RecommendationService {
       )
   );
 
+  /**
+   * Конструктор с внедрением зависимостей.
+   *
+   * @param productRuleSets        наборы правил для продуктов
+   * @param repository             репозиторий данных пользователя
+   * @param dynamicRuleRepository  репозиторий динамических правил
+   * @param statisticsRepository   репозиторий статистики выполнения правил
+   */
   @Autowired
   public RecommendationService(ProductRuleSets productRuleSets,
       com.bank.star.repository.RecommendationRepository repository,
       DynamicRuleRepository dynamicRuleRepository,
-      RuleStatisticsRepository statisticsRepository) {  // ИЗМЕНИЛИ ЗДЕСЬ
+      RuleStatisticsRepository statisticsRepository) {
     this.productRuleSets = productRuleSets;
     this.repository = repository;
     this.dynamicRuleRepository = dynamicRuleRepository;
-    this.statisticsRepository = statisticsRepository;   // И ЗДЕСЬ
+    this.statisticsRepository = statisticsRepository;
   }
 
+  /**
+   * Получает рекомендации продуктов для указанного пользователя.
+   *
+   * @param userId уникальный идентификатор пользователя
+   * @return объект RecommendationResponse с найденными рекомендациями
+   * @throws IllegalArgumentException если userId равен null
+   * @throws UserNotFoundException если пользователь не найден в системе
+   */
   public RecommendationResponse getRecommendations(UUID userId) {
     logger.info("🔄 Getting recommendations for user: {}", userId);
 
@@ -68,15 +87,15 @@ public class RecommendationService {
       throw new UserNotFoundException("User not found: " + userId);
     }
 
-    // ДИАГНОСТИКА ТИПОВ ТРАНЗАКЦИЙ
+    // Диагностика типов транзакций для отладки
     repository.diagnoseTransactionTypes(userId);
 
     List<ProductRecommendation> recommendations = new ArrayList<>();
 
-    // ДЕТАЛЬНАЯ ДИАГНОСТИКА ПРАВИЛ
+    // Детальная диагностика правил для отладки
     logger.info("🔍 DETAILED DIAGNOSTICS for user {}:", userId);
 
-    // Проверяем каждое условие отдельно для Simple Credit
+    // Проверяем каждое условие отдельно для Simple Credit (для диагностики)
     boolean noCredit = repository.userHasProductType(userId, ProductType.CREDIT);
     BigDecimal debitDeposits = repository.getTotalDepositAmountByProductType(userId, ProductType.DEBIT);
     BigDecimal debitSpend = repository.getTotalSpendAmountByProductType(userId, ProductType.DEBIT);
@@ -87,7 +106,7 @@ public class RecommendationService {
     logger.info("🔍   - Deposits > Spend: {}", debitDeposits != null && debitSpend != null && debitDeposits.compareTo(debitSpend) > 0);
     logger.info("🔍   - Spend > 100K: {}", debitSpend != null && debitSpend.compareTo(new BigDecimal("100000")) > 0);
 
-    // Проверяем eligibility
+    // Проверяем eligibility для каждого набора правил
     boolean simpleCreditEligible = productRuleSets.getSimpleCreditRuleSet().isEligible(userId);
     boolean topSavingEligible = productRuleSets.getTopSavingRuleSet().isEligible(userId);
     boolean invest500Eligible = productRuleSets.getInvest500RuleSet().isEligible(userId);
@@ -95,7 +114,7 @@ public class RecommendationService {
     logger.info("🔍 Final eligibility - SimpleCredit: {}, TopSaving: {}, Invest500: {}",
         simpleCreditEligible, topSavingEligible, invest500Eligible);
 
-    // Добавляем все подходящие продукты
+    // Добавляем все подходящие продукты в список рекомендаций
     if (simpleCreditEligible) {
       recommendations.add(products.get("Простой кредит"));
       logger.info("🔍 ADDED Простой кредит");
@@ -111,21 +130,28 @@ public class RecommendationService {
       logger.info("🔍 ADDED Invest 500");
     }
 
-    // После формирования рекомендаций обновляем статистику
+    // После формирования рекомендаций обновляем статистику выполнения правил
     updateRuleStatistics(recommendations);
 
     logger.info("✅ Found {} recommendations for user {}", recommendations.size(), userId);
     return new RecommendationResponse(userId, recommendations);
   }
 
+  /**
+   * Обновляет статистику выполнения правил на основе предоставленных рекомендаций.
+   * Для каждого рекомендованного продукта находит соответствующее правило и увеличивает счетчик.
+   *
+   * @param recommendations список рекомендованных продуктов
+   */
   private void updateRuleStatistics(List<ProductRecommendation> recommendations) {
     for (ProductRecommendation recommendation : recommendations) {
       dynamicRuleRepository.findByProductId(recommendation.getId())
           .ifPresent(rule -> {
-            // Используем репозиторий вместо in-memory сервиса
+            // Ищем существующую статистику или создаем новую
             RuleStatistics statistics = statisticsRepository.findByRuleId(rule.getId())
                 .orElseGet(() -> new RuleStatistics(rule.getId()));
 
+            // Увеличиваем счетчик выполнения
             statistics.incrementCount();
             statisticsRepository.save(statistics);
 
@@ -135,7 +161,10 @@ public class RecommendationService {
     }
   }
 
-  // Метод для сброса кеша
+  /**
+   * Очищает кеш статистики, удаляя все записи из репозитория.
+   * Используется для сброса накопленной статистики.
+   */
   public void clearCaches() {
     statisticsRepository.deleteAll();
     logger.info("🧹 Statistics cleared from database");

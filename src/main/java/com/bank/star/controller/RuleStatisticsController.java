@@ -5,6 +5,7 @@ import com.bank.star.dto.RuleStatsResponse;
 import com.bank.star.repository.RuleStatisticsRepository;
 import com.bank.star.repository.DynamicRuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

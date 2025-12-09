@@ -17,13 +17,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 
 /**
  * Контроллер для тестирования базы данных и отладки рекомендаций
  */
 @RestController
 @RequestMapping("/api/test")
-@io.swagger.v3.oas.annotations.tags.Tag(name = "Database Test", description = "API для тестирования базы данных и отладки системы рекомендаций")
+@Tag(name = "Database Test", description = "API для тестирования базы данных и отладки системы рекомендаций")
 public class DatabaseTestController {
 
   private static final Logger logger = LoggerFactory.getLogger(DatabaseTestController.class);
@@ -41,7 +44,7 @@ public class DatabaseTestController {
    * Тестирование подключения к базе данных
    */
   @GetMapping("/connection")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Проверка подключения к БД",
       description = "Проверяет возможность подключения к базе данных и возвращает информацию о подключении"
   )
@@ -70,7 +73,7 @@ public class DatabaseTestController {
    * Получение списка таблиц в базе данных
    */
   @GetMapping("/tables")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Список таблиц БД",
       description = "Возвращает список всех таблиц в базе данных и их количество"
   )
@@ -103,7 +106,7 @@ public class DatabaseTestController {
    * Простейший тест работы базы данных
    */
   @GetMapping("/simple-test")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Простой тест БД",
       description = "Выполняет простой SQL запрос для проверки работоспособности базы данных"
   )
@@ -122,7 +125,7 @@ public class DatabaseTestController {
    * Получение информации о базе данных
    */
   @GetMapping("/database-info")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Информация о БД",
       description = "Возвращает информацию о версии H2 и режиме работы базы данных"
   )
@@ -165,7 +168,7 @@ public class DatabaseTestController {
    * Получение схемы таблиц transactions и products
    */
   @GetMapping("/schema")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Схема таблиц",
       description = "Возвращает структуру таблиц transactions и products с типами данных колонок"
   )
@@ -203,7 +206,7 @@ public class DatabaseTestController {
    * Получение примеров данных из таблиц
    */
   @GetMapping("/sample-data")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Примеры данных",
       description = "Возвращает первые 5 записей из таблиц transactions и products для ознакомления со структурой данных"
   )
@@ -239,7 +242,7 @@ public class DatabaseTestController {
    * Тестовые запросы для проверки работы БД
    */
   @GetMapping("/test-queries")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Тестовые запросы",
       description = "Выполняет серию тестовых запросов для проверки корректности работы базы данных и данных"
   )
@@ -273,11 +276,11 @@ public class DatabaseTestController {
    * Детальная статистика пользователя для анализа рекомендаций
    */
   @GetMapping("/user-stats/{userId}")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Статистика пользователя",
       description = "Возвращает детальную финансовую статистику пользователя и анализ условий для рекомендаций продуктов"
   )
-  @io.swagger.v3.oas.annotations.Parameter(
+  @Parameter(
       name = "userId",
       description = "UUID пользователя для анализа",
       required = true,
@@ -369,11 +372,11 @@ public class DatabaseTestController {
    * Получение списка продуктов пользователя
    */
   @GetMapping("/user-products/{userId}")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Продукты пользователя",
       description = "Возвращает список всех банковских продуктов, которыми пользуется указанный пользователь"
   )
-  @io.swagger.v3.oas.annotations.Parameter(
+  @Parameter(
       name = "userId",
       description = "UUID пользователя для получения списка продуктов",
       required = true,
@@ -413,11 +416,11 @@ public class DatabaseTestController {
    * Проверка существования пользователя в системе
    */
   @GetMapping("/user-exists/{userId}")
-  @io.swagger.v3.oas.annotations.Operation(
+  @Operation(
       summary = "Проверка пользователя",
       description = "Проверяет существует ли пользователь с указанным UUID в базе данных"
   )
-  @io.swagger.v3.oas.annotations.Parameter(
+  @Parameter(
       name = "userId",
       description = "UUID пользователя для проверки",
       required = true,

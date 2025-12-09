@@ -1,4 +1,4 @@
-//атомарные правила (базовые проверки)(наличие продукта, суммы)
+// Атомарные правила (базовые проверки): наличие продукта, суммы операций и другие базовые условия
 package com.bank.star.service.rules;
 
 import com.bank.star.model.ProductType;
@@ -8,16 +8,31 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Компонент, содержащий атомарные (базовые) правила для рекомендательной системы.
+ * Атомарные правила представляют собой неделимые проверки, которые могут комбинироваться
+ * для создания более сложных условий рекомендаций.
+ */
 @Component
 public class AtomicRules {
 
   private final RecommendationRepository repository;
 
+  /**
+   * Конструктор с внедрением зависимости репозитория.
+   *
+   * @param repository репозиторий для доступа к данным пользователей и продуктов
+   */
   public AtomicRules(RecommendationRepository repository) {
     this.repository = repository;
   }
 
-  // Атомарное правило: наличие продукта определенного типа
+  /**
+   * Атомарное правило: проверяет, есть ли у пользователя продукт указанного типа.
+   *
+   * @param type тип продукта для проверки
+   * @return правило RecommendationRule, проверяющее наличие продукта
+   */
   public RecommendationRule hasProductType(ProductType type) {
     return new RecommendationRule() {
       @Override
@@ -32,7 +47,12 @@ public class AtomicRules {
     };
   }
 
-  // Атомарное правило: отсутствие продукта определенного типа
+  /**
+   * Атомарное правило: проверяет отсутствие у пользователя продукта указанного типа.
+   *
+   * @param type тип продукта для проверки
+   * @return правило RecommendationRule, проверяющее отсутствие продукта
+   */
   public RecommendationRule hasNoProductType(ProductType type) {
     return new RecommendationRule() {
       @Override
@@ -47,7 +67,14 @@ public class AtomicRules {
     };
   }
 
-  // Атомарное правило: сумма пополнений по типу продукта больше порога
+  /**
+   * Атомарное правило: проверяет, что сумма пополнений по продукту типа type
+   * больше заданного порога threshold.
+   *
+   * @param type      тип продукта
+   * @param threshold пороговая сумма (исключительно)
+   * @return правило RecommendationRule для проверки суммы пополнений
+   */
   public RecommendationRule depositGreaterThan(ProductType type, BigDecimal threshold) {
     return new RecommendationRule() {
       @Override
@@ -63,7 +90,14 @@ public class AtomicRules {
     };
   }
 
-  // Атомарное правило: сумма пополнений по типу продукта больше или равна порогу
+  /**
+   * Атомарное правило: проверяет, что сумма пополнений по продукту типа type
+   * больше или равна заданному порогу threshold.
+   *
+   * @param type      тип продукта
+   * @param threshold пороговая сумма (включительно)
+   * @return правило RecommendationRule для проверки суммы пополнений
+   */
   public RecommendationRule depositGreaterOrEqual(ProductType type, BigDecimal threshold) {
     return new RecommendationRule() {
       @Override
@@ -79,7 +113,14 @@ public class AtomicRules {
     };
   }
 
-  // Атомарное правило: сумма трат по типу продукта больше порога
+  /**
+   * Атомарное правило: проверяет, что сумма трат по продукту типа type
+   * больше заданного порога threshold.
+   *
+   * @param type      тип продукта
+   * @param threshold пороговая сумма (исключительно)
+   * @return правило RecommendationRule для проверки суммы трат
+   */
   public RecommendationRule spendGreaterThan(ProductType type, BigDecimal threshold) {
     return new RecommendationRule() {
       @Override
@@ -95,7 +136,13 @@ public class AtomicRules {
     };
   }
 
-  // Атомарное правило: положительный баланс по типу продукта
+  /**
+   * Атомарное правило: проверяет, что баланс по продукту типа type положительный
+   * (сумма пополнений больше суммы трат).
+   *
+   * @param type тип продукта
+   * @return правило RecommendationRule для проверки положительного баланса
+   */
   public RecommendationRule positiveBalance(ProductType type) {
     return new RecommendationRule() {
       @Override
