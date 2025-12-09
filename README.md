@@ -1,8 +1,10 @@
+Вот полный обновленный файл `README.md` с новым разделом "Telegram Bot":
+
 ```markdown
 # Credit Recommendation Service
 
 Сервис, который рекомендует клиентам банка новые кредитные продукты на основе
-данных о клиенте, бизнес‑правил и моделей машинного обучения.[web:1]
+данных о клиенте, бизнес‑правил и моделей машинного обучения. Поддерживает REST API и Telegram-бота (`@alex_Bank_Star_bot`).
 
 ## Стек технологий
 
@@ -18,12 +20,30 @@
 
 ## Основные возможности
 
-- Получение персонализированных кредитных рекомендаций по идентификатору пользователя.[web:1]
+- Получение персонализированных кредитных рекомендаций по идентификатору пользователя.
 - Применение статических и динамических бизнес‑правил.
 - Интеграция с ML‑сервисом для расчёта скоринга/рекомендаций.
 - Кеширование рекомендаций в Redis.
 - Управление правилами и сбор статистики использования.
-- Получение рекомендаций через Telegram‑бота.[web:1]
+- Получение рекомендаций через Telegram‑бота.
+
+## Telegram Bot
+
+Сервис интегрирован с Telegram-ботом **Bank Star Recommendations** (`@alex_Bank_Star_bot`), через который пользователи могут получать кредитные рекомендации.
+
+**Основные возможности бота:**
+- Получение персонализированных рекомендаций по кредитным продуктам
+- Поддержка команд для получения справки и информации о сервисе
+- Интерактивное меню для навигации
+
+**Как начать работу с ботом:**
+1. Найдите в Telegram бота по имени `@alex_Bank_Star_bot`
+2. Откройте диалог с ботом
+3. Используйте команду `/start` для активации
+4. Следуйте инструкциям в меню
+
+**Настройка бота для разработчиков:**
+Токен бота и его настройки задаются через переменные окружения (см. `.env.example`) или в файлах конфигурации (`application-dev.properties`, `application-prod.properties`).
 
 ## Быстрый старт (локально)
 
@@ -36,11 +56,11 @@ cd Credit-recommendation-service
 
 ```
 ./mvnw clean package -DskipTests
- или на Windows:
- mvnw.cmd clean package -DskipTests
+или на Windows:
+mvnw.cmd clean package -DskipTests
 ```
 
-Перед запуском нужно поднять PostgreSQL и Redis и задать переменные окружения:[web:1]
+Перед запуском нужно поднять PostgreSQL и Redis и задать переменные окружения:
 
 ```
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/credit_db
@@ -67,19 +87,19 @@ java -jar target/*.jar
 
 ```
 1. Path Variable (корректный UUID)
-curl "http://localhost:8080/api/v1/recommendations/cd515076-5d8a-44be-930e-8d4fcb79f42d"
+   curl "http://localhost:8080/api/v1/recommendations/cd515076-5d8a-44be-930e-8d4fcb79f42d"
 
 2. Query Parameter (корректный UUID)  
-curl "http://localhost:8080/api/v1/recommendations?userId=cd515076-5d8a-44be-930e-8d4fcb79f42d"
+   curl "http://localhost:8080/api/v1/recommendations?userId=cd515076-5d8a-44be-930e-8d4fcb79f42d"
 
 3. Path Variable (некорректный UUID) - должен вернуть 400
-curl "http://localhost:8080/api/v1/recommendations/test123"
+   curl "http://localhost:8080/api/v1/recommendations/test123"
 
 4. Query Parameter (некорректный UUID) - должен вернуть 400
-curl "http://localhost:8080/api/v1/recommendations?userId=test123"
+   curl "http://localhost:8080/api/v1/recommendations?userId=test123"
 
 5. Несуществующий пользователь - должен вернуть 404
-curl "http://localhost:8080/api/v1/recommendations/00000000-0000-0000-0000-000000000000"
+   curl "http://localhost:8080/api/v1/recommendations/00000000-0000-0000-0000-000000000000"
 ```
 
 ## Запуск через Docker Compose
@@ -90,19 +110,19 @@ curl "http://localhost:8080/api/v1/recommendations/00000000-0000-0000-0000-00000
 docker-compose up -d
 ```
 
-Compose‑файл поднимает приложение, PostgreSQL и Redis, а подключение настраивается через переменные среды.[web:1]
+Compose‑файл поднимает приложение, PostgreSQL и Redis, а подключение настраивается через переменные среды.
 
 ## Структура проекта
 
-- `src/main/java/...` — исходный код сервиса (контроллеры, сервисы, правила, интеграции).[web:1]
+- `src/main/java/...` — исходный код сервиса (контроллеры, сервисы, правила, интеграции).
 - `src/main/resources/application*.properties` — конфигурация Spring Boot.
 - `src/main/resources/db/migration` — миграции Flyway (если присутствуют).
 - `data/` — обучающие/тестовые данные и артефакты для ML‑части.
-- `wiki` (GitHub Wiki) — архитектурная и проектная документация.[web:2]
+- `wiki` (GitHub Wiki) — архитектурная и проектная документация.
 
 ## Документация (Wiki)
 
-Расширенная документация находится в GitHub Wiki репозитория:[web:2]
+Расширенная документация находится в GitHub Wiki репозитория:
 
 - **Требования и User Story** — акторы, функциональные и нефункциональные требования:  
   <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/Требования.md>
