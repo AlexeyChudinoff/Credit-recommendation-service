@@ -1,7 +1,7 @@
 ```markdown
 # Credit Recommendation Service
 
-Сервис, который рекомендует клиентам банка новые кредитные продукты на основе данных о клиенте, бизнес‑правил и моделей машинного обучения.
+Сервис, который рекомендует клиентам банка новые кредитные продукты на основе данных о клиенте, бизнес‑правил и моделей машинного обучения.[web:1]
 
 ## Стек технологий
 
@@ -13,30 +13,33 @@
 - ML: внешний сервис на Python / Scikit‑learn
 - API: REST, OpenAPI (Swagger), Spring Boot Actuator
 - Интеграции: Telegram Bot API
-- Инфраструктура: Docker, Docker Compose, Flyway (миграции БД)
+- Инфраструктура: Docker, Docker Compose, Flyway
 
 ## Основные возможности
 
-- Получение персонализированных кредитных рекомендаций по идентификатору пользователя.
+- Получение персонализированных кредитных рекомендаций по идентификатору пользователя.[web:1]
 - Применение статических и динамических бизнес‑правил.
 - Интеграция с ML‑сервисом для расчёта скоринга/рекомендаций.
 - Кеширование рекомендаций в Redis.
 - Управление правилами и сбор статистики использования.
-- Получение рекомендаций через Telegram‑бота.
+- Получение рекомендаций через Telegram‑бота.[web:1]
 
 ## Быстрый старт (локально)
 
 ```
 git clone https://github.com/AlexeyChudinoff/Credit-recommendation-service.git
 cd Credit-recommendation-service
+```
 
-# Сборка (при необходимости без тестов)
+Сборка (при необходимости без тестов):
+
+```
 ./mvnw clean package -DskipTests
 # или на Windows:
 # mvnw.cmd clean package -DskipTests
 ```
 
-Перед запуском нужно поднять PostgreSQL и Redis и задать переменные окружения:
+Перед запуском нужно поднять PostgreSQL и Redis и задать переменные окружения:[web:1]
 
 ```
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/credit_db
@@ -44,8 +47,11 @@ export SPRING_DATASOURCE_USERNAME=credit_user
 export SPRING_DATASOURCE_PASSWORD=secure_password
 export SPRING_REDIS_HOST=localhost
 export SPRING_REDIS_PORT=6379
+```
 
-# при наличии:
+При наличии дополнительных сервисов:
+
+```
 export TELEGRAM_BOT_TOKEN=your_bot_token
 export ML_SERVICE_URL=http://localhost:5000
 ```
@@ -64,33 +70,39 @@ curl "http://localhost:8080/api/v1/recommendations?userId=test123"
 
 ## Запуск через Docker Compose
 
-Если используешь Docker Compose:
+Если используете Docker Compose:
 
 ```
 docker-compose up -d
 ```
 
-Compose‑файл поднимает приложение, PostgreSQL и Redis, а подключение настраивается через переменные среды.
+Compose‑файл поднимает приложение, PostgreSQL и Redis, а подключение настраивается через переменные среды.[web:1]
 
 ## Структура проекта
 
-- `src/main/java/...` — исходный код сервиса (контроллеры, сервисы, правила, интеграции).
+- `src/main/java/...` — исходный код сервиса (контроллеры, сервисы, правила, интеграции).[web:1]
 - `src/main/resources/application*.properties` — конфигурация Spring Boot.
 - `src/main/resources/db/migration` — миграции Flyway (если присутствуют).
-- `docs/` или `wiki` — документация и диаграммы (архитектура, требования, API).
+- `data/` — обучающие/тестовые данные и артефакты для ML‑части.
+- `wiki` (GitHub Wiki) — архитектурная и проектная документация.[web:2]
 
-## Документация
+## Документация (Wiki)
 
-Расширенная документация лежит в GitHub Wiki:
+Расширенная документация находится в GitHub Wiki репозитория:[web:2]
 
-- **Требования и User Story** — акторы, функциональные и нефункциональные требования.
-- **Архитектура** — компонентная и activity‑диаграммы, описание взаимодействий.
-- **API документация** — OpenAPI/Swagger для REST‑интерфейса.
-- **Развертывание** — подробные инструкции по запуску в разных средах и настройке окружения.
+- **Требования и User Story** — акторы, функциональные и нефункциональные требования:  
+  <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/Требования.md>
+- **Архитектура** — компонентная диаграмма и диаграмма деятельности алгоритма рекомендаций:  
+  <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/Архитектура>
+- **API документация** — описание REST API в формате OpenAPI/Swagger:  
+  <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/API-Документация>
+- **Развертывание** — требования к окружению и подробная инструкция по запуску в разных средах:  
+  <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/Развертывание>
+- **Главная (обзор проекта)** — краткое описание, стек и навигация по документации:  
+  <https://github.com/AlexeyChudinoff/Credit-recommendation-service/wiki/Главная>
 
 ## Планы развития
 
-- Расширение набора продуктовых правил.
+- Расширение набора продуктовых правил и сценариев рекомендаций.
 - Улучшение моделей ML и их конфигурируемости.
-- Добавление новых каналов интеграции (например, мобильное приложение/веб‑UI).
-```
+- Добавление новых каналов интеграции (мобильное приложение, веб‑UI для менеджера).
