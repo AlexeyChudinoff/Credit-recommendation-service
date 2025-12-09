@@ -66,19 +66,19 @@ java -jar target/*.jar
 Проверка:
 
 ```
-# 1. Path Variable (корректный UUID)
+1. Path Variable (корректный UUID)
 curl "http://localhost:8080/api/v1/recommendations/cd515076-5d8a-44be-930e-8d4fcb79f42d"
 
-# 2. Query Parameter (корректный UUID)  
+2. Query Parameter (корректный UUID)  
 curl "http://localhost:8080/api/v1/recommendations?userId=cd515076-5d8a-44be-930e-8d4fcb79f42d"
 
-# 3. Path Variable (некорректный UUID) - должен вернуть 400
+3. Path Variable (некорректный UUID) - должен вернуть 400
 curl "http://localhost:8080/api/v1/recommendations/test123"
 
-# 4. Query Parameter (некорректный UUID) - должен вернуть 400
+4. Query Parameter (некорректный UUID) - должен вернуть 400
 curl "http://localhost:8080/api/v1/recommendations?userId=test123"
 
-# 5. Несуществующий пользователь - должен вернуть 404
+5. Несуществующий пользователь - должен вернуть 404
 curl "http://localhost:8080/api/v1/recommendations/00000000-0000-0000-0000-000000000000"
 ```
 
